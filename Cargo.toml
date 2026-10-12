@@ -1,0 +1,16 @@
+[workspace]
+members = ["packages/core"]
+exclude = ["programs/manteon", "packages/client-rust", "tests/manteon", "vendor/tekmerion"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
+
+[profile.release]
+overflow-checks = true

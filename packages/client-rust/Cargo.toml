@@ -1,0 +1,23 @@
+[package]
+name = "manteon-client"
+version = "0.1.0"
+description = "Validated account reads for the Manteon Anchor program"
+edition = "2021"
+rust-version = "1.89"
+publish = false
+workspace = "../../programs/manteon"
+
+[features]
+default = ["mainnet"]
+mainnet = ["manteon/mainnet"]
+devnet = ["manteon/devnet"]
+
+[dependencies]
+anchor-lang = { version = "=1.2.1", default-features = false, features = ["solana-v3"] }
+anchor-spl = { version = "=1.2.1", default-features = false, features = ["solana-v3", "token"] }
+manteon = { path = "../../programs/manteon", default-features = false, features = ["no-entrypoint"] }
+manteon-core = { path = "../core" }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"

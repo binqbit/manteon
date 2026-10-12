@@ -1,0 +1,3 @@
+[submodule "tekmerion"]
+	path = vendor/tekmerion
+	url = ../tekmerion.git

@@ -1,0 +1,17 @@
+name: Standalone contract checks
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Check core, Anchor, IDL and standalone Manteon VM
+        run: bash scripts/check.sh --restore

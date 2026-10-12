@@ -1,0 +1,15 @@
+[toolchain]
+anchor_version = "1.2.1"
+
+[features]
+resolution = false
+
+[programs.localnet]
+manteon = "MNTxcR8N6rWisHYbt73SPyvBZqQUQiW1NKhGa3N1etM"
+
+[provider]
+cluster = "Localnet"
+wallet = ".agent-workspace/keys/local-wallet.json"
+
+[workspace]
+members = ["programs/manteon"]

@@ -1,0 +1,1871 @@
+{
+  "address": "MNTxcR8N6rWisHYbt73SPyvBZqQUQiW1NKhGa3N1etM",
+  "metadata": {
+    "name": "manteon",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Manteon prediction market program built with Anchor"
+  },
+  "docs": [
+    "Typed Anchor entrypoints; handlers own validation, CPI and atomic transitions."
+  ],
+  "instructions": [
+    {
+      "name": "accept_global_admin",
+      "discriminator": [238, 44, 208, 164, 154, 153, 79, 81],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "activate_pool",
+      "discriminator": [129, 125, 90, 174, 121, 169, 225, 239],
+      "accounts": [
+        {
+          "name": "service_authority",
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event"
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "policy",
+          "writable": true
+        },
+        {
+          "name": "client_authority"
+        },
+        {
+          "name": "tekmerion_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "activate_price_pool",
+      "discriminator": [111, 97, 138, 183, 18, 3, 81, 60],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event"
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "monitor",
+          "writable": true
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "begin_settlement",
+      "docs": [
+        "Consume authenticated Yes and freeze atomically; pre-LOCK events authorize refunds."
+      ],
+      "discriminator": [124, 223, 80, 249, 19, 59, 26, 92],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event"
+        },
+        {
+          "name": "case",
+          "optional": true
+        },
+        {
+          "name": "vault"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim",
+      "discriminator": [62, 198, 214, 193, 213, 159, 108, 210],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event"
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "stake",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "fee_recipient",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "platform_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "complete_pool",
+      "discriminator": [172, 201, 3, 45, 136, 12, 87, 117],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_config",
+      "discriminator": [201, 207, 243, 114, 75, 111, 47, 189],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Configuration author; no deployment authority is required."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Explicit storage payer, independent of platform and service roles."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Fresh configuration identity; Anchor rejects existing initialized accounts."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config"
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "Supported legacy SPL mint; native/wrapped SOL is outside this boundary."
+          ]
+        },
+        {
+          "name": "fee_recipient",
+          "docs": [
+            "An initialized, unfrozen destination for this exact collateral mint."
+          ]
+        },
+        {
+          "name": "platform_fee_vault",
+          "docs": [
+            "One shared collection vault per mint, controlled by GlobalConfig.",
+            "A configuration author cannot choose its authority or withdraw fees."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Only the legacy SPL Token program is accepted by this instruction."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System account creation through Anchor's checked initializer."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "service_authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "audit_config",
+          "type": "pubkey"
+        },
+        {
+          "name": "profit_fee_bps",
+          "type": "u16"
+        },
+        {
+          "name": "expected_platform_share_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "create_pool",
+      "discriminator": [233, 146, 209, 142, 207, 104, 64, 188],
+      "accounts": [
+        {
+          "name": "service_authority",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "event",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint",
+          "docs": ["Initialized legacy SPL collateral selected by Config."]
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "event",
+          "type": {
+            "defined": {
+              "name": "EventDefinition"
+            }
+          }
+        },
+        {
+          "name": "algorithm",
+          "type": {
+            "defined": {
+              "name": "PoolAlgorithm"
+            }
+          }
+        },
+        {
+          "name": "agreement_hash",
+          "type": {
+            "array": ["u8", 32]
+          }
+        },
+        {
+          "name": "expected_config_hash",
+          "type": {
+            "array": ["u8", 32]
+          }
+        },
+        {
+          "name": "opens_at",
+          "type": "i64"
+        },
+        {
+          "name": "lock_at",
+          "type": "i64"
+        },
+        {
+          "name": "horizon_at",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "exit",
+      "discriminator": [234, 32, 12, 71, 126, 5, 219, 160],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "stake",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "expire_price_observation",
+      "discriminator": [42, 143, 101, 55, 199, 33, 114, 144],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event",
+          "writable": true
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "monitor",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "finalize_price_threshold",
+      "discriminator": [5, 122, 229, 193, 127, 94, 212, 253],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event",
+          "writable": true
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "monitor",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "finalize_settlement",
+      "discriminator": [220, 72, 152, 119, 178, 196, 25, 170],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event"
+        },
+        {
+          "name": "case",
+          "optional": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_global_config",
+      "discriminator": [113, 216, 122, 131, 225, 209, 22, 55],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true
+        },
+        {
+          "name": "program"
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "admin",
+          "type": "pubkey"
+        },
+        {
+          "name": "fee_authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "platform_share_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "process_positions",
+      "docs": [
+        "Remaining accounts are one to eight distinct writable canonical Positions."
+      ],
+      "discriminator": [218, 33, 171, 43, 75, 230, 88, 39],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event"
+        },
+        {
+          "name": "case",
+          "optional": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "propose_company_ipo",
+      "discriminator": [128, 128, 224, 104, 251, 97, 50, 40],
+      "accounts": [
+        {
+          "name": "author",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event",
+          "writable": true
+        },
+        {
+          "name": "policy",
+          "writable": true
+        },
+        {
+          "name": "client_authority"
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "case",
+          "writable": true
+        },
+        {
+          "name": "author_receipt",
+          "writable": true
+        },
+        {
+          "name": "case_vault",
+          "writable": true
+        },
+        {
+          "name": "bond_mint"
+        },
+        {
+          "name": "tekmerion_program"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": {
+            "defined": {
+              "name": "EventResult"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "propose_global_admin",
+      "discriminator": [186, 253, 247, 220, 222, 63, 148, 30],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_admin",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "record_price_observation",
+      "discriminator": [88, 159, 91, 146, 36, 14, 109, 84],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "event",
+          "writable": true
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "monitor",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "stake",
+      "discriminator": [206, 176, 202, 18, 200, 209, 179, 108],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "stake",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "source",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "forecast_day",
+          "type": "i64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unstake",
+      "discriminator": [90, 95, 107, 42, 205, 124, 50, 225],
+      "accounts": [
+        {
+          "name": "owner",
+          "signer": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "position",
+          "writable": true
+        },
+        {
+          "name": "stake",
+          "writable": true
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "vault_authority"
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_config",
+      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Configuration author; no deployment authority is required."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Explicit storage payer, independent of platform and service roles."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "global_config"
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "Supported legacy SPL mint; native/wrapped SOL is outside this boundary."
+          ]
+        },
+        {
+          "name": "fee_recipient",
+          "docs": [
+            "An initialized, unfrozen destination for this exact collateral mint."
+          ]
+        },
+        {
+          "name": "platform_fee_vault",
+          "docs": [
+            "One shared collection vault per mint, controlled by GlobalConfig.",
+            "A configuration author cannot choose its authority or withdraw fees."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Only the legacy SPL Token program is accepted by this instruction."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System account creation through Anchor's checked initializer."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "service_authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "audit_config",
+          "type": "pubkey"
+        },
+        {
+          "name": "profit_fee_bps",
+          "type": "u16"
+        },
+        {
+          "name": "expected_platform_share_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "update_global_config",
+      "discriminator": [164, 84, 130, 189, 111, 58, 250, 200],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "platform_share_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_platform_fees",
+      "discriminator": [87, 24, 138, 122, 62, 146, 186, 199],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "global_config"
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "platform_fee_vault",
+          "writable": true
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+    },
+    {
+      "name": "Event",
+      "discriminator": [125, 192, 125, 158, 9, 115, 152, 233]
+    },
+    {
+      "name": "GlobalConfig",
+      "discriminator": [149, 8, 156, 202, 160, 252, 176, 217]
+    },
+    {
+      "name": "Pool",
+      "discriminator": [241, 154, 109, 4, 17, 177, 109, 188]
+    },
+    {
+      "name": "Position",
+      "discriminator": [170, 188, 143, 228, 122, 64, 247, 208]
+    },
+    {
+      "name": "PriceMonitor",
+      "discriminator": [120, 218, 183, 198, 214, 120, 105, 44]
+    },
+    {
+      "name": "Stake",
+      "discriminator": [150, 197, 176, 29, 55, 132, 112, 149]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "UnauthorizedPlatform",
+      "msg": "GlobalConfig initialization requires the deployment upgrade authority"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidProgramData",
+      "msg": "ProgramData must belong to this Manteon deployment"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidServiceAuthority",
+      "msg": "Service authority must not be the default public key"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidAuditConfig",
+      "msg": "Audit configuration reference must not be the default public key"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidFeeRecipient",
+      "msg": "Fee recipient must be an initialized, unfrozen account of the collateral mint"
+    },
+    {
+      "code": 6005,
+      "name": "UnsupportedCollateral",
+      "msg": "Native or wrapped SOL is not supported collateral"
+    },
+    {
+      "code": 6006,
+      "name": "UnauthorizedServiceAuthority",
+      "msg": "Pool creation requires the configured service authority"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidPoolSchedule",
+      "msg": "Pool schedule must satisfy now < opens_at < lock_at <= horizon_at"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidEventMint",
+      "msg": "Event mint must not be the default public key"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidCollateralMint",
+      "msg": "Collateral mint must match the configured mint"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidPoolState",
+      "msg": "Operation is not allowed in this Pool state"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidPosition",
+      "msg": "Position identity or membership is invalid"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidStake",
+      "msg": "Stake identity or entitlement is invalid"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidTokenAccount",
+      "msg": "Token account must belong to the owner and use the collateral mint"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidVault",
+      "msg": "Vault custody configuration is invalid"
+    },
+    {
+      "code": 6015,
+      "name": "InsufficientBacking",
+      "msg": "Vault balance is below recorded liabilities"
+    },
+    {
+      "code": 6016,
+      "name": "UnexpectedTokenBalance",
+      "msg": "Token transfer did not produce the exact expected balance changes"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidAccounting",
+      "msg": "Recorded principal, allowance or settlement accounting is invalid"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidTime",
+      "msg": "Operation is outside its permitted time window"
+    },
+    {
+      "code": 6019,
+      "name": "UnsupportedDate",
+      "msg": "Date is outside the supported Q64.64 settlement domain"
+    },
+    {
+      "code": 6020,
+      "name": "Arithmetic",
+      "msg": "Checked arithmetic failed"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidAmount",
+      "msg": "Amount must be positive and within the available allowance"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidAuditAccount",
+      "msg": "Authenticated Tekmerion Policy or Case is invalid"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidEventResult",
+      "msg": "Proposed event result does not match this Pool or its valid time domain"
+    },
+    {
+      "code": 6024,
+      "name": "ServiceWindow",
+      "msg": "Only the service authority may perform this operation before public fallback"
+    },
+    {
+      "code": 6025,
+      "name": "IncompleteSettlement",
+      "msg": "Settlement requires complete unique positive-date coverage"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidBatch",
+      "msg": "Batch must contain between one and eight distinct Positions"
+    },
+    {
+      "code": 6027,
+      "name": "InvalidAgreement",
+      "msg": "Agreement hash must not be zero"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidPriceRule",
+      "msg": "Invalid immutable price threshold rule"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidPriceSource",
+      "msg": "Price source identity, account layout or liquidity is invalid"
+    },
+    {
+      "code": 6030,
+      "name": "StalePriceSource",
+      "msg": "Price source is stale, future dated or insufficiently verified"
+    },
+    {
+      "code": 6031,
+      "name": "InvalidPriceObservation",
+      "msg": "The price averaging interval is not ready or monitoring has expired"
+    },
+    {
+      "code": 6032,
+      "name": "PriceThresholdNotCrossed",
+      "msg": "The verified USD price has not crossed the committed threshold"
+    },
+    {
+      "code": 6033,
+      "name": "InvalidFeeRates",
+      "msg": "Profit fee must not exceed 20%; platform share must not exceed 100% of that fee"
+    },
+    {
+      "code": 6034,
+      "name": "UnauthorizedGlobalAdmin",
+      "msg": "Only the GlobalConfig admin may change deployment settings"
+    },
+    {
+      "code": 6035,
+      "name": "UnauthorizedFeeAuthority",
+      "msg": "Only the configured fee authority may withdraw platform fees"
+    },
+    {
+      "code": 6036,
+      "name": "InvalidGlobalAuthority",
+      "msg": "Global authorities must not be the default public key"
+    },
+    {
+      "code": 6037,
+      "name": "FeeTermsChanged",
+      "msg": "The platform share changed; review the configuration terms again"
+    },
+    {
+      "code": 6038,
+      "name": "UnauthorizedConfigAuthority",
+      "msg": "Only the configuration creator may update its settings"
+    },
+    {
+      "code": 6039,
+      "name": "ConfigInUse",
+      "msg": "Configuration is retained by unfinished pools"
+    },
+    {
+      "code": 6040,
+      "name": "PoolNotComplete",
+      "msg": "The pool has not completed all participant obligations"
+    },
+    {
+      "code": 6041,
+      "name": "ConfigTermsChanged",
+      "msg": "Configuration settings changed; review the pool terms again"
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "docs": [
+        "Creator-selected identities and bounded fees; no discretionary principal access.",
+        "",
+        "Only the creator may update unused settings. Drafts retain them at creation;",
+        "each Pool releases its dependency exactly once after completing its lifecycle."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Creator authorized to update settings when active_pools is zero."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "active_pools",
+            "docs": [
+              "Pools that have not yet released their dependency, including Drafts."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "service_authority",
+            "docs": [
+              "Creator-selected service executor for instructions that authorize it."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_mint",
+            "docs": [
+              "Initialized legacy SPL mint selected for prediction collateral."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_recipient",
+            "docs": [
+              "Initialized token account for the selected collateral mint."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "profit_fee_bps",
+            "docs": [
+              "Fee on positive gross profit, at most MAX_PROFIT_FEE_BPS."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "platform_share_bps",
+            "docs": [
+              "Deployment share copied when settings are saved; locked while in use."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "audit_config",
+            "docs": [
+              "Tekmerion Policy address, authenticated by the adapter before activation or use."
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CrossingDirection",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Up"
+          },
+          {
+            "name": "Down"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Event",
+      "docs": ["Immutable event rule and its occurrence facts."],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "definition",
+            "type": {
+              "defined": {
+                "name": "EventDefinition"
+              }
+            }
+          },
+          {
+            "name": "result",
+            "docs": [
+              "Latest IPO proposal or verified price result. IPO acceptance requires its Case."
+            ],
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "EventResult"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventDefinition",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CompanyIpo",
+            "fields": [
+              {
+                "name": "token_mint",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "TokenPriceThresholdCrossing",
+            "fields": [
+              {
+                "name": "params",
+                "type": {
+                  "defined": {
+                    "name": "PriceThreshold"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventResult",
+      "docs": [
+        "Occurrence facts: proposed for IPO review or verified directly from price sources."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "occurred_at",
+            "type": "i64"
+          },
+          {
+            "name": "extra",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "EventResultExtra"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventResultExtra",
+      "docs": [
+        "Additional verified facts; the event definition supplies the event type."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PriceVerification",
+            "fields": [
+              {
+                "name": "lower_usd_e9",
+                "type": "u64"
+              },
+              {
+                "name": "upper_usd_e9",
+                "type": "u64"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "GlobalConfig",
+      "docs": [
+        "Initialized once by the upgrade authority. Roles may be wallets or multisig",
+        "signing PDAs. Market configurations snapshot the share at creation."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "Authority allowed to update deployment settings and nominate its successor."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pending_admin",
+            "docs": [
+              "A nominated successor must sign acceptance before gaining administrative rights."
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "fee_authority",
+            "docs": [
+              "Authority allowed to withdraw collected platform fees, without pool access."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "platform_share_bps",
+            "docs": [
+              "Basis points of the configuration's collected fee, not an extra user charge."
+            ],
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pool",
+      "docs": [
+        "A scheduled market and its audit, participation and settlement accounting."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": "pubkey"
+          },
+          {
+            "name": "event_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "collateral_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "audit_config",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_recipient",
+            "docs": [
+              "Economic terms remain historical facts after the Config is reused."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "profit_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "platform_share_bps",
+            "type": "u16"
+          },
+          {
+            "name": "config_released",
+            "docs": [
+              "Prevents repeated release or reactivation of a completed Pool."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "agreement_hash",
+            "docs": ["SHA-256 of the immutable canonical agreement document."],
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "algorithm",
+            "docs": ["Immutable payout accuracy curve."],
+            "type": {
+              "defined": {
+                "name": "PoolAlgorithm"
+              }
+            }
+          },
+          {
+            "name": "opens_at",
+            "type": "i64"
+          },
+          {
+            "name": "lock_at",
+            "type": "i64"
+          },
+          {
+            "name": "horizon_at",
+            "type": "i64"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "PoolState"
+              }
+            }
+          },
+          {
+            "name": "next_case_nonce",
+            "type": "u64"
+          },
+          {
+            "name": "current_case",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "principal",
+            "docs": [
+              "Participating principal; becomes the immutable basis at settlement freeze."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "active_dates",
+            "type": "u64"
+          },
+          {
+            "name": "processed_dates",
+            "type": "u64"
+          },
+          {
+            "name": "total_weight",
+            "docs": [
+              "Unsigned Q64.64 accumulator: 64 integer bits and 64 fractional bits."
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "payout_remaining",
+            "docs": [
+              "Unpaid allocations; after completion, any remainder is rounding dust."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "claimed_principal",
+            "docs": [
+              "Principal of consumed competitive Stakes, including zero-value payouts."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "service_eligible_at",
+            "docs": [
+              "Clock time of the first successfully funded proposal.",
+              "Preserves public submission eligibility across candidate changes/retries.",
+              "Settlement service eligibility is derived separately from audit finality."
+            ],
+            "type": {
+              "option": "i64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolAlgorithm",
+      "docs": [
+        "Pool-specific accuracy half-life. Variant indices are part of the wire ABI."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "H30"
+          },
+          {
+            "name": "H15"
+          },
+          {
+            "name": "H7"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Draft"
+          },
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Settling"
+          },
+          {
+            "name": "Claimable"
+          },
+          {
+            "name": "Refunding"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Position",
+      "docs": [
+        "Aggregate participating principal for one Pool and UTC forecast day."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "forecast_day",
+            "docs": ["Signed UTC day since the Unix epoch, not a timestamp."],
+            "type": "i64"
+          },
+          {
+            "name": "principal",
+            "docs": [
+              "Current participating principal; immutable after settlement freeze."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "computed",
+            "docs": [
+              "Whether this date has contributed to the single settlement calculation."
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceBaseline",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "observed_at",
+            "docs": [
+              "Timestamp of the authenticated CPMM cumulative endpoint, not supplied by a caller."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "cumulative_price_x32",
+            "type": "u128"
+          },
+          {
+            "name": "reference_observed_at",
+            "type": "i64"
+          },
+          {
+            "name": "reference_cumulative_price_x32",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceMonitor",
+      "docs": [
+        "Temporary price observations, separate from the market's event definition and result."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "baseline",
+            "docs": [
+              "Present only while the associated price Pool is Active and unresolved."
+            ],
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "PriceBaseline"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceProtocol",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "RaydiumCpmm"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceThreshold",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "protocol",
+            "type": {
+              "defined": {
+                "name": "PriceProtocol"
+              }
+            }
+          },
+          {
+            "name": "pool_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "direction",
+            "type": {
+              "defined": {
+                "name": "CrossingDirection"
+              }
+            }
+          },
+          {
+            "name": "target_price_usd_e9",
+            "docs": [
+              "USD per whole token, with nine fractional digits. No binary floats."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "usd_quote_source",
+            "type": {
+              "defined": {
+                "name": "UsdQuoteSource"
+              }
+            }
+          },
+          {
+            "name": "twap_window_seconds",
+            "type": "u32"
+          },
+          {
+            "name": "max_observation_gap_seconds",
+            "type": "u32"
+          },
+          {
+            "name": "minimum_quote_liquidity_usd_e9",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Stake",
+      "docs": [
+        "One owner's principal and personal withdrawal allowance for a Position."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "position",
+            "type": "pubkey"
+          },
+          {
+            "name": "principal",
+            "docs": [
+              "Participating principal, including funds outside the personal allowance."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "withdrawable_principal",
+            "docs": [
+              "Spendable only while the personal window and Pool state permit withdrawal."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "withdraw_until",
+            "type": "i64"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "StakeState"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakeState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paid"
+          },
+          {
+            "name": "Refunded"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UsdQuoteSource",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Usdc"
+          },
+          {
+            "name": "PythSolUsd",
+            "fields": [
+              {
+                "name": "price_update_account",
+                "type": "pubkey"
+              },
+              {
+                "name": "receiver_program",
+                "type": "pubkey"
+              },
+              {
+                "name": "feed_id",
+                "type": {
+                  "array": ["u8", 32]
+                }
+              },
+              {
+                "name": "max_age_seconds",
+                "type": "u32"
+              },
+              {
+                "name": "max_confidence_bps",
+                "type": "u16"
+              }
+            ]
+          },
+          {
+            "name": "RaydiumSolUsdc",
+            "fields": [
+              {
+                "name": "pool_id",
+                "type": "pubkey"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

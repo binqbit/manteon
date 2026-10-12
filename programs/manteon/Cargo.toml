@@ -1,0 +1,49 @@
+[package]
+name = "manteon"
+version = "0.1.0"
+description = "Manteon prediction market program built with Anchor"
+edition = "2021"
+rust-version = "1.89"
+publish = false
+
+# Keep the Solana/SBF dependency graph separate from the pure calculation crate.
+[workspace]
+members = ["../../packages/client-rust"]
+default-members = ["."]
+resolver = "2"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "manteon"
+
+[features]
+default = ["strict-entrypoint", "mainnet"]
+mainnet = ["tekmerion-sdk/mainnet"]
+devnet = ["tekmerion-sdk/devnet"]
+# Validate complete instruction payloads, then invoke the generated Anchor entry.
+strict-entrypoint = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+anchor-debug = ["anchor-lang/anchor-debug"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "tekmerion-sdk/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "=1.2.1", default-features = false, features = ["solana-v3", "init-if-needed"] }
+# Anchor token-account initialization and IDL require token_interface.
+# Account<Mint/TokenAccount> and Program<Token> still enforce legacy SPL only.
+anchor-spl = { version = "=1.2.1", default-features = false, features = ["solana-v3", "token", "token_2022"] }
+solana-sha256-hasher = "=3.1.0"
+manteon-core = { path = "../../packages/core" }
+tekmerion-sdk = { path = "../../vendor/tekmerion/sdk/rust", default-features = false, features = ["cpi"] }
+
+[lints.rust]
+# Anchor emits undocumented sibling types that do not inherit item-level
+# allowances. Hand-written public API stays documented; core denies missing docs.
+unsafe_code = "deny"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))', 'cfg(feature, values("custom-heap", "custom-panic", "cpi"))'] }
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1

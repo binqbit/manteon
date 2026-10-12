@@ -1,0 +1,8 @@
+/.agent-workspace/
+target/
+__pycache__/
+node_modules/
+dist/
+.env
+*.so
+*-keypair.json
