@@ -1,109 +1,179 @@
 # Event rules
 
-An immutable [EventDefinition](../programs/manteon/src/state/event.rs) selects
-one of two acceptance mechanisms. `EventResult` contains `occurred_at` and
-optional verified price bounds. An IPO value in Event is a candidate until its
-current Case is accepted; a price result is produced by verified source reads.
+Each pool selects an immutable event definition and acceptance mechanism.
+Company IPOs use evidence review through Tekmerion. Token price thresholds use
+fixed on-chain sources. Both ultimately supply the UTC date used in
+[settlement](protocol.md#accuracy-and-payout-arithmetic).
 
 ## Company IPO
 
-`CompanyIpo` identifies the token mint representing the company. Applications
-commit the issuer/evidence sources in the agreement. The agreed question asks
-when the company actually completed its public IPO. Announcements, estimates,
-token mint creation and a token's first exchange trade do not establish that
-fact. If evidence confirms the date without a time, use 00:00:00 UTC on that
-date. If completion and date cannot be established, the review answer is Unknown.
+The IPO rule identifies the token mint representing the company. The agreement
+must define the issuer and evidence sources. The question is when the company
+**actually completed its public IPO**. Announcements, estimates, token mint
+creation and a token's first exchange trade do not establish that fact. If the
+evidence establishes a date without a time, the agreed convention is midnight
+UTC on that date. Evidence that cannot establish completion and its date calls
+for an Unknown review answer.
 
-The contract checks mint identity, nonfuture occurrence time, its supported
-timestamp range and the competitive date domain. It renders the result
-document and opens a Tekmerion Case with the separate USDC author bond, bound
-to the Pool, policy, attempt nonce, agreement hash and result hash. It does not
-read websites or establish external IPO facts itself.
+A proposer supplies occurrence facts and funds a fresh Tekmerion review with a
+separate USDC author bond. Manteon checks the event identity, a nonfuture time,
+the supported calendar range and, for a competitive result, the allowed date
+domain. It generates a canonical result commitment bound to the pool and its
+agreement. It does not fetch websites or establish the external company facts.
 
-Under the acquired Policy, challengers can fund a challenge. An underfunded
-Case can finalize with optimistic Yes after its funding window. A funded Case
-requires the appointed auditors' signed matching verdicts; failure to reach
-quorum before timeout closes without accepting the candidate. See
-[Tekmerion's process](../vendor/tekmerion/docs/how-it-works.md).
+### Review and acceptance
 
-Manteon accepts only its current authenticated finalized Yes, completed
-optimistically or by audit. An audited No/Unknown or technical failure permits
-a fresh paid attempt; previous Case claims remain available. Every retry keeps
-the first successful proposal's Clock time, so it cannot reset public access.
+The pool retains its review policy when activated. Challengers may fund a
+challenge under those locked terms:
 
-The service may propose immediately. Other authors become eligible at the
-earlier of `horizon_at − 30 days` and `first_paid_attempt_at + 30 days`. Applying
-accepted Yes and processing/finalizing settlement are available immediately to
-the service, and to the public at `case.finalized_at + 30 days`. These windows use
-exactly thirty UTC days, independently of the selected accuracy half-life.
+- An underfunded challenge can close with **optimistic Yes** after its funding
+  window. Auditors have not verified the report in this path.
+- A fully funded challenge requires the appointed auditors to reach the
+  threshold of matching signed answers: Yes, No or Unknown.
+- Failure to reach agreement before the audit deadline closes as a technical
+  failure and leaves the report unaccepted.
 
-An accepted occurrence before lock enables principal refunds; otherwise it
-freezes the remaining book for settlement. The horizon allows exits while the
-Pool remains Active, including pending review, and is not an IPO deadline.
+See [Tekmerion's process](../vendor/tekmerion/docs/how-it-works.md) for review
+funding, voting, fees and withdrawals.
+
+Manteon accepts only the pool's current, authenticated, finalized Yes, completed
+optimistically or by audit. Applying that acceptance is a separate Manteon
+transaction. A review result becoming final does not move prediction capital
+or automatically freeze the pool.
+
+An audited No, audited Unknown or technical failure permits a new attempt with
+a fresh author bond. An accepted Yes ends that attempt sequence. Earlier
+review claims remain available in Tekmerion, and retries preserve the time of
+the first successfully funded proposal.
+
+### Occurrence time and access windows
+
+Three clocks have different meanings:
+
+| Time                                    | Purpose                                                                 |
+| --------------------------------------- | ----------------------------------------------------------------------- |
+| Reported occurrence time                | The IPO fact under review and the UTC day used to score forecasts.      |
+| First successfully funded proposal time | Anchors public proposal access across retries.                          |
+| Review finalization time                | Anchors public access to applying acceptance and completing settlement. |
+
+The service may propose as soon as the pool is Active. Other authors may
+propose at the earlier of thirty days before the horizon and thirty days after
+the first paid proposal. Before any proposal exists, the horizon-based opening
+is the public path. A caller-supplied occurrence time cannot accelerate it.
+
+The service may apply an accepted Yes and process/finalize settlement
+immediately. Other callers may do so thirty days after that Case's
+finalization. Every service window means exactly thirty UTC days, independently
+of H30, H15 or H7. Owner claims require no service signature.
+
+An accepted occurrence before entry close enables principal refunds. An
+occurrence at or after entry close freezes the remaining capital for
+competitive settlement. The horizon enables owner exits while the pool stays
+Active, including during pending review; it does not impose an IPO occurrence
+or review deadline.
 
 ## Token price threshold crossing
 
-`TokenPriceThresholdCrossing` fixes a Raydium CPMM pool, token mint, direction,
-positive USD target, conversion source, averaging interval, maximum gap and
-minimum quote liquidity. CLMM and AMM v4 are unsupported.
+The price rule fixes a Raydium CPMM pool, tracked token, direction, positive USD
+target, conversion source, minimum averaging interval, maximum monitoring gap
+and minimum quote liquidity. CLMM and AMM v4 are unsupported. The sources and
+parameters cannot be replaced after pool creation.
 
-| Rule                     | On-chain bounds                                             |
-| ------------------------ | ----------------------------------------------------------- |
-| Target                   | USD per whole token, integer billionths of a dollar (`e9`). |
-| Minimum averaging window | 300–3600 seconds.                                           |
-| Maximum observation gap  | At least twice the minimum window, at most 86,400 seconds.  |
-| Minimum quote liquidity  | At least $10,000 in fee-adjusted quote reserves.            |
-| Pyth maximum age         | 1–120 seconds.                                              |
-| Pyth confidence ratio    | 1–100 basis points.                                         |
+Prices represent USD per whole token with nine decimal places. An encoded
+integer $x$ means $x/10^9$ dollars. Targets and calculations use integer
+arithmetic, with lower and upper bounds where conversion or rounding creates
+uncertainty.
 
-These are validation limits, not program defaults. All source parameters are
-immutable. Supported conversion choices are:
+### Supported USD conversion
 
-- **Token/USDC:** canonical USDC valued at exactly $1; no extra oracle.
-- **Token/SOL plus Pyth SOL/USD:** fixed maintained update account, supported
-  receiver and SOL/USD feed. Fully verified, positive, nonfuture updates must
-  satisfy age/confidence bounds. Token/SOL interval mean is multiplied by
-  current SOL/USD confidence bounds.
-- **Token/SOL plus Raydium SOL/USDC:** a separate fixed CPMM pool. The product
-  of interval means defines conversion; it is not the mean of instantaneous
-  USD products. Source endpoints must be within 30 seconds.
+| Tracked market and conversion                | Meaning of the interval price                                                                        |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Token/USDC                                   | Average token price in canonical USDC, with USDC valued at exactly $1.                               |
+| Token/SOL with Pyth SOL/USD                  | Average token/SOL price multiplied by the current verified SOL/USD confidence bounds.                |
+| Token/SOL with a fixed Raydium SOL/USDC pool | Product of the two interval averages, using authenticated endpoints within 30 seconds of each other. |
 
-Activation requires current spot bounds entirely opposite the target:
-`upper < target` for up, `lower > target` for down. It creates a PriceMonitor
-with authenticated cumulative endpoints. Source readers check owners, supported
-layouts, pool/mint identities, observation PDA, vaults, trading availability and
-liquidity. Raydium fees are excluded from reserves; cumulative endpoints may be
-at most 120 seconds old. Supported source vaults may use SPL Token or Token-2022.
+The last path computes a product of averages; it does not reconstruct an
+average of simultaneous USD products. Pyth conversion fixes the update
+account, supported receiver and SOL/USD feed. Fully verified updates must be
+positive, nonfuture and within the selected age and confidence limits.
 
-The baseline survives Raydium ring rewrites. An interval runs from it to a new
-authenticated endpoint within the fixed minimum window and maximum gap; it is
-not a rolling chart average. Integer calculations handle decimals, cumulative
-wrapping, confidence and outward rounding. No unobserved interval is filled
-with a present spot value.
+### Baseline, average and spot
 
-Any wallet may advance observations, confirm a crossing or expire monitoring:
+Activation must happen before opening and requires the current spot bounds to
+be entirely opposite the target. For an upward crossing, the upper bound must
+be below the target. For a downward crossing, the lower bound must be above it.
+Activation saves an authenticated cumulative-price baseline.
 
-1. `record_price_observation` advances the baseline only when neither interval
-   nor current spot satisfies the target, so it cannot erase a qualifying price.
-2. `finalize_price_threshold` requires both to qualify: `lower >= target` for
-   up, `upper <= target` for down. A straddling uncertainty interval fails.
-   Executing Clock becomes occurrence time, with `now <= horizon_at`. It clears
-   the baseline and atomically freezes principal or enables pre-lock refunds.
-3. Settlement processing and finalization are public immediately; no Case,
-   bond, audit or service waiting window is involved.
-4. `expire_price_observation` requires `now > horizon_at` or
-   `now − baseline.observed_at > max_gap`. It accepts no source accounts,
-   clears the baseline and enables refunds without inventing a result.
+A cumulative price records price integrated over time. If $C_0$ and $C_1$ are
+its values at endpoints $t_0$ and $t_1$, the interval average follows
 
-Confirmation records verification time, not the first historical price move.
-Brief spikes may fail the average/spot combination; stale sources, inactivity
-or lost monitoring can prevent confirmation. The rule does not compensate for
-a USDC depeg, prove fair value or exclude sustained manipulation. External
-program upgrades remain a trust dependency.
+$$
+\overline{p} = \frac{C_1-C_0}{t_1-t_0},
+$$
 
-The [adapter](../programs/manteon/src/integration/price.rs),
-[Raydium reader](../programs/manteon/src/integration/price/raydium.rs),
-[Pyth reader](../programs/manteon/src/integration/price/pyth.rs) and
-[instructions](../programs/manteon/src/instructions/price_threshold.rs) define
-supported layouts and exact checks. [Local tests](../tests/README.md) verify
-execution with controlled sources; they do not prove live source availability.
+with the source's fixed-point scale, token decimals and USD conversion applied.
+The implementation handles cumulative-counter wrapping and rounds converted
+bounds outward. It does not extend an old endpoint with today's spot price or
+fill an unobserved interval.
+
+```mermaid
+flowchart LR
+    Start["Retained cumulative baseline"] --> Interval["Later authenticated endpoint: interval average"]
+    Interval --> Both{"Average and current spot both beyond target?"}
+    Both -->|Yes| Confirm["Record executing Clock as event time"]
+    Both -->|"Neither beyond target"| Advance["Allow a new observation baseline"]
+    Both -->|"Only one beyond target"| Wait["Keep the baseline; no confirmation"]
+```
+
+The baseline belongs to Manteon, so Raydium observation-ring rewrites do not
+erase it. The interval begins at that retained baseline, rather than at a
+rolling chart window. A successful noncrossing observation advances it only
+when neither the interval nor the current spot satisfies the target.
+
+Let $q$ be the target and $[L,U]$ a verified price interval. A crossing requires
+
+$$
+\begin{aligned}
+\text{upward:}&\quad L \geq q,\\
+\text{downward:}&\quad U \leq q.
+\end{aligned}
+$$
+
+**Both** the interval average and the current spot bounds must qualify. A bound
+that straddles the target cannot confirm a crossing.
+
+### Safeguards and expiry
+
+| Requirement                    | Enforced boundary                                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Minimum averaging interval     | 300–3600 seconds, selected by the pool.                                                                    |
+| Maximum monitoring gap         | At least twice the minimum interval and at most 86,400 seconds.                                            |
+| Quote liquidity                | At least $10,000 in fee-adjusted quote reserves; applies to both CPMM pools when using Raydium conversion. |
+| Raydium endpoint freshness     | No more than 120 seconds old.                                                                              |
+| Pyth update age                | Pool-selected limit of 1–120 seconds.                                                                      |
+| Pyth confidence-to-price ratio | Pool-selected limit of 1–100 basis points.                                                                 |
+
+These are validation bounds, not defaults. Source reads also authenticate
+account owners, complete supported layouts, pool and mint identities,
+observation identity, vaults and trading availability. Protocol, fund and
+creator fees held in Raydium vaults are excluded from reserves. Source vaults
+may use SPL Token or Token-2022.
+
+Any wallet may submit observations, confirm a threshold or expire monitoring.
+Confirmation must execute at or before the horizon and within the maximum gap
+from the retained baseline. It records the executing on-chain Clock, clears
+the baseline and atomically freezes principal or enables pre-close refunds.
+Settlement processing is public immediately, with no Case, bond or auditors.
+
+After the horizon, or once the retained baseline exceeds the maximum gap, any
+wallet can expire monitoring. Expiry accepts no price-source accounts, clears
+the baseline and enables principal refunds without creating an event time.
+The expiry comparisons are strict: exactly at the horizon, confirmation and
+owner exit can still be eligible; exactly at the maximum gap, an otherwise
+valid observation or confirmation can still qualify.
+
+Confirmation establishes verification time, not the first historical market
+move. Average-plus-spot checks can reject brief spikes. Sustained manipulation,
+USDC depegging, stale or unavailable sources and external program upgrades
+remain limits of the rule. Controlled local tests verify its execution, not
+live source availability or economic fair value.
