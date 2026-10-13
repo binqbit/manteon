@@ -1,37 +1,57 @@
 # How Manteon works
 
-A service opens a pool with immutable rules. Owners commit forecasts and
-capital, the event is accepted through its fixed mechanism, and remaining
-capital is settled and claimed. Every diagram below describes program behavior;
-an application's background jobs only submit the same authorized transactions.
+A service creates a pool with fixed rules and activates it before opening.
+Owners fund date forecasts, the event is accepted through its selected
+mechanism, and owners claim the resulting allocations or refunds. Each step
+is an on-chain transaction; application jobs submit those same transactions.
 
 ## Operations
 
 ```mermaid
 flowchart TD
-    Config["Create Config: collateral, service, review policy and fees"] --> Draft["Service creates Draft Pool and immutable Event"]
-    Draft --> Activate["Service activates before opening"]
-    Activate --> Entry["Owners stake dates while entry is open"]
-    Entry --> Withdraw["Owners withdraw eligible new capital before entry closes"]
-    Entry --> Resolve{"Event mechanism"}
-    Resolve --> IPO["IPO: paid proposal and Tekmerion review"]
-    Resolve --> Price["Price: public source verification"]
-    IPO --> Accepted{"Accepted occurrence before entry closes?"}
-    Price --> Accepted
-    Accepted -->|Yes| Refund["Owners claim principal refunds"]
-    Accepted -->|No| Freeze["Freeze remaining principal"]
-    Freeze --> Process["Process each funded forecast date"]
-    Process --> Claims["Finalize settlement; owners claim allocations"]
-    Resolve -->|"Still Active at horizon"| Exit["Owners exit remaining capital"]
-    Price -->|"Horizon or observation gap expires"| Refund
-    Refund --> Release["Release Config after all entitlements are consumed"]
-    Claims --> Release
-    Exit -->|"Pool empty"| Release
+    Draft["Create a Draft with fixed rules and fees"] --> Active["Activate before opening"]
+    Active --> Entry["Owners fund date forecasts during entry"]
+    Entry --> Withdrawal["Owners withdraw eligible new capital"]
+    Active --> Event{"Accept the event"}
+    Event --> IPO["IPO report completes Tekmerion review"]
+    Event --> Price["Price average and spot confirm the target"]
+    IPO --> Timing{"Occurrence before entry close?"}
+    Price --> Timing
+    Timing -->|Yes| Refund["Enable principal refunds"]
+    Timing -->|No| Freeze["Freeze the remaining capital and dates"]
+    Freeze --> Process["Compute weight for every funded date"]
+    Process --> Claims["Finalize settlement; owners claim payouts"]
+    Active -->|"Unresolved at horizon"| Exit["Owners exit with their principal"]
+    Active -->|"Price monitoring expires"| Refund
 ```
 
-Withdrawals and exits reduce the participating book atomically with token
-transfers. Once settlement freezes it, deposits, withdrawals and exits stop.
-No deadline automatically sends a transaction or pays an owner.
+Ordinary withdrawals and horizon exits remove capital from the participating
+pool at the same time as the token transfer. Event acceptance freezes only the
+capital still participating. Once frozen, that basis stays fixed through all
+competitive claims.
+
+## How the records fit together
+
+A Config holds reusable service, collateral, fee and review settings. A Pool
+reserves that Config and fixes its own event, schedule and accuracy curve.
+A Position groups the participating capital on one forecast date. A Stake
+records one owner's capital at that date and whether its entitlement has been
+consumed.
+
+```mermaid
+flowchart LR
+    Config["Config: reusable settings"] -->|"Retained terms"| Pool["Pool: fixed competition and lifecycle"]
+    Pool --> Event["Event: rule and candidate or verified result"]
+    Pool --> Position["Position: capital at one forecast date"]
+    Position --> Stake["Stake: one owner's capital and claim right"]
+    Pool --> Vault["Vault: this pool's prediction collateral"]
+    Event -->|"IPO candidate"| Review["Tekmerion Case: separate review and USDC funds"]
+```
+
+The prediction vault is governed by participation and payout rules. Review
+bonds and challenge funds belong to Tekmerion's separate custody. Service,
+configuration and governance roles do not gain discretionary access to
+prediction principal.
 
 ## IPO transaction sequence
 
@@ -42,31 +62,29 @@ sequenceDiagram
     participant M as Manteon
     participant T as Tekmerion
     participant Review as Challengers and auditors
-    Service->>M: create_pool(config hash, agreement hash, schedule)
-    M->>M: Reserve Config; create Pool, Event and vault
-    Service->>M: activate_pool
-    M->>T: acquire_policy via Manteon signer PDA
-    T-->>M: Policy terms retained
-    Owner->>M: stake(forecast_day, amount)
-    M->>M: Transfer collateral; update Position and Stake
-    Service->>M: propose_company_ipo(occurred_at)
-    M->>M: Validate facts; render canonical result hash
-    M->>T: create_case with separate author USDC bond
-    Review->>T: Fund challenge; submit signed votes if funded
-    T->>T: Finalize optimistic Yes, audited verdict or timeout
-    Service->>M: begin_settlement with current finalized Yes Case
-    M->>M: Authenticate both hashes; freeze or enable refunds
-    Service->>M: process_positions (1 to 8 per transaction)
-    Service->>M: finalize_settlement
-    Owner->>M: claim
-    M->>Owner: Net allocation
-    M->>M: Transfer included fees; consume Stake
+    Service->>M: Create and activate the pool before opening
+    M->>T: Retain the pool's review policy
+    Owner->>M: Fund a chosen UTC date while entry is open
+    Service->>M: Propose IPO occurrence facts
+    M->>T: Open a review with the author's separate USDC bond
+    Review->>T: Fund a challenge; vote if it reaches its target
+    T->>T: Finalize acceptance, rejection, Unknown or timeout
+    Service->>M: Apply the current accepted report
+    M->>M: Freeze participating capital or enable early-event refunds
+    Service->>M: Process funded dates and finalize settlement
+    Owner->>M: Claim own allocation
+    M->>Owner: Transfer net allocation and consume the entitlement
 ```
 
-Other wallets gain proposal and settlement access after the
-[defined service windows](events.md#company-ipo). A finalized No, Unknown or
-technical failure permits a new paid attempt; the previous Case keeps its own
-claims. Finalized Yes is applied to Manteon in a separate transaction.
+The proposal's occurrence time is the event fact being reviewed. Review
+completion has its own time and governs public settlement access. A finalized
+Yes becomes effective in Manteon only when an eligible caller applies it.
+Until that transaction, an Active pool still follows its participation and
+horizon-exit rules.
+
+Rejection, an Unknown verdict or technical failure allows a new paid attempt.
+Earlier review withdrawals remain available in Tekmerion. Other wallets gain
+proposal and settlement access after the [defined service windows](events.md#company-ipo).
 
 ## Price transaction sequence
 
@@ -75,60 +93,67 @@ sequenceDiagram
     participant Service
     participant Wallet as Any wallet
     participant M as Manteon
-    participant Sources as Fixed Raydium and optional conversion accounts
-    Service->>M: activate_price_pool with fixed source accounts
-    M->>Sources: Authenticate source data and initial opposite-side spot
-    M->>M: Save PriceMonitor baseline; mark Pool Active
-    Wallet->>M: record_price_observation
-    M->>Sources: Authenticate new endpoint and compute interval
-    M->>M: Advance baseline only if neither price crosses
-    Wallet->>M: finalize_price_threshold
-    M->>Sources: Recheck interval and current spot against target
-    M->>M: Record executing Clock; clear baseline; freeze or refund
-    Wallet->>M: process_positions; finalize_settlement
-    Wallet->>M: claim own Stake
+    participant Sources as Fixed price sources
+    Service->>M: Activate the pool before opening
+    M->>Sources: Authenticate sources and opposite-side spot price
+    M->>M: Save a cumulative-price baseline
+    Wallet->>M: Submit a later observation
+    M->>Sources: Read a fresh endpoint and current spot price
+    M->>M: Advance the baseline only if neither has crossed
+    Wallet->>M: Confirm the threshold
+    M->>Sources: Verify that both the interval and spot qualify
+    M->>M: Record confirmation time; freeze capital or enable refunds
+    Wallet->>M: Process funded dates and finalize settlement
+    Wallet->>M: Claim own allocation
 ```
 
-These are distinct instructions; the sequence does not require them to fit in
-one transaction. Each instruction is atomic. Invalid or stale sources leave
-state unchanged. If monitoring expires, any wallet can call
-`expire_price_observation` without source accounts and enable refunds, without
-creating an occurrence date or a Tekmerion Case.
+An observation and a confirmation are separate actions. A qualifying
+confirmation can use the baseline from activation or from an earlier accepted
+observation. The [event rules](events.md#token-price-threshold-crossing) define
+its averaging interval, freshness and uncertainty checks.
+
+If the monitoring gap expires or confirmation misses the horizon, any wallet
+can enable refunds without supplying price sources. This records no invented
+occurrence date. Successful price confirmation makes settlement processing
+public immediately.
 
 ## Pool states
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Draft: create_pool
-    Draft --> Active: activate_pool / activate_price_pool
-    Active --> Active: stake / unstake / unresolved horizon exit
-    Active --> Settling: accepted occurrence at or after lock
-    Active --> Refunding: accepted occurrence before lock / price expiry
-    Settling --> Settling: process_positions
-    Settling --> Claimable: finalize_settlement
-    Claimable --> Claimable: claim
-    Refunding --> Refunding: claim principal
+    [*] --> Draft: create fixed terms
+    Draft --> Active: activate before opening
+    Active --> Active: deposits, withdrawals or horizon exits
+    Active --> Settling: accept occurrence at or after entry close
+    Active --> Refunding: accept earlier occurrence or expire price monitoring
+    Settling --> Settling: process funded dates
+    Settling --> Claimable: finalize the complete calculation
+    Claimable --> Claimable: owners claim allocations
+    Refunding --> Refunding: owners claim principal
 ```
 
-There is no Closed state. `config_released` records that a Pool has released its
-configuration reservation and prevents reactivation or further participation.
-The final competitive claim, final refund or exit emptying an Active Pool
-releases it automatically. `complete_pool` also handles eligible unused Drafts
-and empty Active Pools; see [configuration lifecycle](configuration.md#config-lifecycle).
-Completing a Pool does not delete its historical accounts or unlock Tekmerion
-policy terms.
+State changes and transfers happen atomically within each instruction. A failed
+instruction leaves its state and transfers unapplied. Separate instructions
+may execute in separate transactions, and no deadline submits them automatically.
+
+Completion releases a pool's reservation on its Config after its entitlements
+are consumed. An unused Draft can also be abandoned. There is no general
+service cancellation action for a funded Active pool. Historical records
+remain available after completion; the pool cannot reopen. See
+[configuration lifecycle](configuration.md#config-lifecycle).
 
 ## Stake states
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Active: first stake
-    Active --> Active: top-up / partial or full unstake
-    Active --> Refunded: horizon exit / refund claim
-    Active --> Paid: competitive claim, including zero payout
+    [*] --> Active: first deposit
+    Active --> Active: top-up or ordinary withdrawal
+    Active --> Refunded: horizon exit or principal refund
+    Active --> Paid: competitive claim, including a zero payout
 ```
 
-A terminal Stake cannot be deposited into or paid again. Competitive and refund
-claims retain historical Stake principal. Exit sets it to zero and consumes the
-Stake. Full ordinary unstake also sets principal to zero, but leaves the Stake
-Active so a later eligible deposit can open a fresh withdrawal window.
+A full ordinary withdrawal leaves the Stake Active with zero principal, so a
+later eligible deposit can reopen its withdrawal allowance. An exit or claim
+consumes the entitlement and prevents further deposits into that Stake or a
+second payment. Competitive and refund claims preserve historical stake
+principal; a horizon exit sets the remaining principal to zero.

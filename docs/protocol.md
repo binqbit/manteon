@@ -1,143 +1,171 @@
 # Protocol specification
 
-The [Anchor interface](../idl/manteon.json) defines instruction and account wire
-layouts. The [program](../programs/manteon/src/lib.rs) owns authorization and
-atomic changes; [core calculations](../packages/core/src/lib.rs) provide
-checked quotes without granting custody or admission rights.
-
-## Accounts and addresses
-
-All seeds below derive PDAs under the Manteon program ID. Public keys are
-32-byte seed values; `forecast_day` is little-endian signed `i64`.
-
-| Account              | Identity and purpose                                                                                  |
-| -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `GlobalConfig`       | `["global_config"]`; deployment admin, fee authority and fee share.                                   |
-| `Config`             | Fresh signing keypair; creator-owned reusable settings and `active_pools` reservation count.          |
-| `Pool`               | Fresh signing keypair; immutable terms, lifecycle and settlement accounting.                          |
-| `Event`              | `["event", pool]`; immutable event definition and latest proposal or verified result.                 |
-| `Position`           | `["position", pool, forecast_day]`; principal aggregated for one forecast date and its computed flag. |
-| `Stake`              | `["stake", position, owner]`; one owner's principal, allowance and terminal entitlement state.        |
-| `PriceMonitor`       | `["price_monitor", pool]`; retained cumulative baseline for a price pool.                             |
-| Prediction vault     | `["vault", pool]`; collateral account owned by `["vault_authority", pool]`.                           |
-| Platform fee vault   | `["platform_fee_vault", mint]`; collateral account owned by GlobalConfig.                             |
-| Tekmerion CPI signer | `["tekmerion", policy]`; authorizes review integration, with no prediction custody rights.            |
-
-Pool retains the Config's collateral mint, audit policy and fee facts at creation.
-The Config remains locked while a Pool uses it. Event and Pool are reciprocally
-bound. A Position aggregates owners at a date; an owner's Stakes at different
-dates remain separate entitlements. Account readers must check owner,
-discriminator, full size, canonical address and membership, in addition to
-deserializing fields. See the [Rust reader](../packages/client-rust/README.md).
-
-## Instructions and signers
-
-The [strict entrypoint](../programs/manteon/src/entrypoint.rs) rejects unread
-payload suffixes before generated Anchor dispatch, for direct calls and CPI.
-
-| Instruction                                   | Required authority and effect                                                              |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `initialize_global_config`                    | Program upgrade authority; one-time singleton initialization.                              |
-| `update_global_config`                        | Global admin; update fee authority and future Config platform share.                       |
-| `propose_global_admin`, `accept_global_admin` | Current then nominated admin; two-step role transfer.                                      |
-| `withdraw_platform_fees`                      | Fee authority; withdraw from the canonical mint treasury.                                  |
-| `create_config`                               | Creator; permissionless settings creation with independent storage payer.                  |
-| `update_config`                               | Creator; replace settings only with zero retained Pools.                                   |
-| `create_pool`                                 | Config service; create Draft, Event and collateral vault, reserve Config.                  |
-| `activate_pool`                               | Config service; validate IPO mint and acquire Tekmerion Policy before opening.             |
-| `activate_price_pool`                         | Config service; authenticate initial fixed sources and create monitoring baseline.         |
-| `stake`                                       | Owner; deposit a positive amount into an eligible forecast date.                           |
-| `unstake`                                     | Owner; withdraw a positive amount allowed by the personal window and entry schedule.       |
-| `exit`                                        | Owner; return all remaining Stake capital from an Active Pool at/after horizon.            |
-| `propose_company_ipo`                         | Eligible service/public author; validate result and fund a fresh review Case.              |
-| `record_price_observation`                    | Any wallet; advance a qualifying noncrossing observation baseline.                         |
-| `finalize_price_threshold`                    | Any wallet; verify crossing and freeze or refund atomically.                               |
-| `expire_price_observation`                    | Any wallet; enable refunds after horizon or lost monitoring gap.                           |
-| `begin_settlement`                            | Eligible service/public caller; apply an accepted IPO Case and freeze or refund.           |
-| `process_positions`                           | Authorized settlement caller; process 1–8 distinct writable canonical Positions.           |
-| `finalize_settlement`                         | Authorized settlement caller; require complete funded-date processing and enable claims.   |
-| `claim`                                       | Owner; consume a competitive allocation or principal refund exactly once.                  |
-| `complete_pool`                               | Eligible creator/service/public caller; release an unused or fully consumed Pool's Config. |
-
-Price settlement processing and finalization are immediately public. IPO
-settlement steps authenticate the current accepted Case each time and follow
-the [service window](events.md#company-ipo). Claiming requires no service
-signature or document archive.
+Manteon enforces immutable pool terms, authenticated event acceptance and a
+single claim per entitlement. This guide defines the exact time and arithmetic
+rules. [How it works](how-it-works.md) explains the records and lifecycle;
+[event rules](events.md) define each acceptance mechanism.
 
 ## Dates and participation
 
-Unix timestamps are signed seconds; forecast dates are integer UTC days since
-the Unix epoch. Creation requires `now < opens_at < lock_at <= horizon_at`;
-activation requires `now < opens_at`. Deposits require an unreleased Active Pool
-and `opens_at <= now < lock_at`. Ordinary withdrawal requires an unreleased
-Active Pool, `now < lock_at` and a live personal allowance; its capital can only
-have entered after opening.
+All clocks use Unix seconds and all forecasts use UTC calendar days. A day
+number is the number of days since 1 January 1970. For a timestamp $t$,
 
-An eligible forecast has `day_start(forecast_day) >= lock_at` and
-`utc_day(lock_at) <= forecast_day <= utc_day(lock_at) + max_error_days`.
-Consequently a lock within a day makes the next UTC day the earliest forecast.
-H30, H15 and H7 support maximum errors of 1920, 960 and 448 days respectively.
-Creation bounds the horizon within that same interval. Forecasts may extend
-past the horizon; accepted competitive results must remain in the supported
-domain. Pre-lock results instead enable principal refunds.
+$$
+D(t) = \left\lfloor \frac{t}{86\,400} \right\rfloor.
+$$
 
-New capital is withdrawable for 48 hours. Top-ups during a live allowance add
-withdrawable capital without extending its deadline. After expiry, only the
-new deposit receives a fresh allowance; earlier capital stays locked. The
-personal deadline is exclusive, and lock ends ordinary withdrawals even if it
-has not expired. Full ordinary withdrawal leaves a zero-principal Active Stake
-that can receive a later eligible deposit. At/after horizon, an owner may exit
-an Active Pool regardless of a pending review, until freeze or refund transition
-wins transaction ordering. Exit consumes the Stake.
+Let $t_o$ be opening time, $t_l$ entry close and $t_h$ the horizon.
+Creation at time $t$ requires
+
+$$
+t < t_o < t_l \leq t_h.
+$$
+
+The service must activate the pool before $t_o$. Deposits require an Active,
+incomplete pool and $t_o \leq t < t_l$. Ordinary withdrawals also require an
+Active, incomplete pool and $t < t_l$, together with an owner's live
+withdrawal allowance. Each deposit and withdrawal must have a positive amount.
+
+An eligible forecast day $d$ satisfies both
+
+$$
+86\,400d \geq t_l,
+\qquad
+D(t_l) \leq d \leq D(t_l) + E_H,
+$$
+
+where $E_H$ is the selected curve's largest supported error. If entry closes
+at noon, the earliest forecast is the following UTC day. A midnight close
+permits that same day.
+
+| Curve | Half-life $H$ | Largest supported error $E_H = 64H$ |
+| ----- | ------------: | ----------------------------------: |
+| H30   |       30 days |                           1920 days |
+| H15   |       15 days |                            960 days |
+| H7    |        7 days |                            448 days |
+
+Creation also requires $D(t_h)-D(t_l) \leq E_H$. Forecast dates may extend
+beyond the horizon. Competitive event results must fall within the same date
+domain; pre-close occurrences instead enable principal refunds. IPO results
+can occur after the horizon within that domain. Price confirmation must execute
+no later than the horizon.
+
+## Withdrawals and horizon exits
+
+The personal allowance belongs to an owner's Stake at one forecast date:
+
+- A first deposit gives the full new amount a 48-hour allowance.
+- A top-up during a live allowance adds its amount without extending the deadline.
+- A top-up after expiry gives only the new amount a fresh 48-hour allowance.
+- Withdrawal reduces both remaining principal and the available allowance.
+- A full withdrawal leaves an Active, empty Stake. A later eligible deposit
+  starts a fresh allowance.
+
+For example, an owner deposits 100 tokens on Monday at noon, then adds 20 on
+Tuesday. All 120 are eligible until Wednesday at noon, subject to entry close.
+If the owner instead adds 20 after Wednesday noon, only those 20 receive a new
+allowance; the earlier 100 remain locked.
+
+Withdrawal deadlines are exclusive. At the exact personal deadline or at entry
+close, ordinary withdrawal stops. Event acceptance or monitoring expiry can
+end Active participation sooner.
+
+At $t \geq t_h$, an owner may exit with all remaining positive Stake
+principal while the pool remains Active. Pending or even finalized IPO review
+does not itself stop exit: applying the accepted report does. Transaction
+ordering decides whether exit or the transition to settlement/refunds happens
+first. Exited capital leaves all subsequent payout calculations and the Stake
+is consumed.
 
 ## Accuracy and payout arithmetic
 
-All collateral amounts use integer token atoms. Let `p_i` be Stake principal,
-`P` the frozen pool principal, `d_i` absolute UTC-day forecast error and `H` the
-selected 30-, 15- or 7-day half-life:
+All collateral arithmetic uses integer token base units, also called atoms.
+For Stake $i$, let $p_i$ be its participating principal, $d_i$ its
+forecast day and $d_*$ the accepted event's UTC day. The absolute day error is
 
-```text
-c_i = floor(2^64 × 2^(−d_i/H))
-w_i = p_i × c_i
-W   = sum of the weights of all frozen Positions
-gross_i = floor(P × w_i / W)
-```
+$$
+e_i = |d_i-d_*|.
+$$
 
-The coefficient is floored before multiplying principal. Q64.64 weights retain
-64 fractional bits, and the payout numerator uses checked 256-bit arithmetic.
-Same-date principal is additive, so splitting it does not increase weight.
-Token-atom rounding occurs independently for each Stake's payout; splitting can
-change the resulting rounding and per-Stake fee calculation.
+With selected half-life $H$, the exact scaled accuracy coefficient and weight
+are
 
-Settlement freezes principal, funded date membership and the eventual
-denominator. Processing checks canonical Position identity, excludes duplicate
-accounts in a batch and records each positive date exactly once. Finalization
-requires every funded date to have contributed and a positive denominator for
-a nonempty pool. An empty pool can finalize without processing.
+$$
+c_i = \left\lfloor 2^{64}\,2^{-e_i/H} \right\rfloor,
+\qquad
+w_i = p_i c_i.
+$$
 
-Gross allocations already include returned principal. Claims reduce
-`payout_remaining` by gross, consume the Stake and accumulate its principal in
-`claimed_principal`. Pool/Position principal and total weight remain frozen.
-A zero-value allocation still requires a claim and consumes its entitlement.
-Independent flooring can leave dust; the program exposes no dust withdrawal
-or vault donation recovery instruction. Completion depends on consumed
-principal, not an empty token vault. See [fee formulas](configuration.md#fees).
+The coefficient is floored **before** multiplying by principal. The scale
+retains 64 fractional bits of accuracy without floating-point arithmetic. The
+admitted date domain keeps each positive stake's coefficient nonzero.
+
+For frozen pool principal $P$ and total weight $W$,
+
+$$
+P = \sum_i p_i,
+\qquad
+W = \sum_i w_i,
+\qquad
+g_i = \left\lfloor \frac{P w_i}{W} \right\rfloor.
+$$
+
+Here $g_i$ is the gross allocation, including any returned principal. Its
+ratio calculation uses checked 256-bit integer arithmetic. Multiplying before
+division preserves fractional weight.
+
+Capital at a shared date is additive: the date's aggregate weight equals the
+sum of its owners' weights. Splitting same-date principal cannot increase that
+weight. Gross payouts and [profit fees](configuration.md#fees) are nevertheless
+floored separately per Stake, so splitting can change token-unit rounding.
+
+## Settlement and claims
+
+Acceptance of a competitive result freezes principal and funded date membership.
+Each funded Position contributes its weight exactly once, in batches of one to
+eight dates. The program authenticates membership and rejects repeated dates,
+duplicate accounts in a batch and zero-principal dates.
+
+Finalization enables claims only after every funded date has contributed and a
+nonempty pool has a positive denominator. An empty pool needs no date
+processing. IPO processing authenticates the accepted current review at every
+step and follows its [service window](events.md#company-ipo). Price processing
+is public immediately after confirmation.
+
+The owner then claims each positive-principal Stake. Competitive claims consume
+the entitlement and reduce outstanding payout liability by the gross allocation.
+Frozen principal, date aggregates and total weight remain unchanged. A
+zero-token payout still requires a claim to consume the entitlement.
+
+Principal refunds consume the Stake and remove its principal from the remaining
+refund book. They preserve the Stake's historical deposited amount. Withdrawals,
+horizon exits and refund claims carry no profit fee.
+
+Independent flooring can leave token dust. Donations also remain outside the
+participating principal. The protocol provides no dust or donation recovery
+action. Completion depends on consumed entitlements, so a nonempty vault does
+not by itself prevent [Config release](configuration.md#config-lifecycle).
 
 ## Custody and integration boundaries
 
-Prediction collateral is an initialized legacy SPL mint; native/wrapped SOL
-and Token-2022 prediction collateral are unsupported. Price-source vault reads
-can support SPL Token and Token-2022 independently of prediction custody.
-Token transfers check expected mint, owner, initialized state, liability and
-exact balance changes. A service, Config creator, global admin or audit signer
-has no discretionary prediction-principal withdrawal instruction.
+Prediction collateral must be an initialized legacy SPL token mint. Native or
+wrapped SOL and Token-2022 prediction collateral are unsupported. Price-source
+vaults can use SPL Token or Token-2022 independently of prediction custody.
 
-Tekmerion owns separate USDC review custody. Its Policy/Case accounts are
-authenticated by [the adapter](../programs/manteon/src/integration/tekmerion.rs),
-including owner, full size, discriminator, canonical address, signer binding,
-attempt chain and both document hashes. Price readers authenticate the fixed
-external sources described in [event rules](events.md).
+Every capital movement checks the expected token mint, authority, initialized
+account state, available liability and exact balance changes. Owners sign their
+own deposits, withdrawals, exits and claims. No service, Config creator, global
+admin or review signer has a discretionary principal-withdrawal action.
 
-Upgrades, network access, external program behavior and off-chain evidence
-remain trust dependencies. Synthetic tests establish local execution behavior,
-not live deployment or the factual truth of an IPO verdict.
+Protocol records are linked by authenticated identities. Reading fields alone
+is insufficient: integrations must validate program ownership, full account
+layout, canonical identities and membership, and acquire snapshots from the
+intended network at a consistent checkpoint. The strict entrypoint also rejects
+instruction payloads with unread trailing bytes, including calls from other
+programs.
+
+Tekmerion review is separate from prediction custody. Manteon authenticates its
+policy, current attempt, accepted completion and both document commitments.
+Price acceptance authenticates the fixed external sources described in
+[event rules](events.md). Network access, program upgrades, external evidence
+and source availability remain integration dependencies.

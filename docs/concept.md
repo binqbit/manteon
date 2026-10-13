@@ -1,41 +1,94 @@
 # Manteon concept
 
-Manteon lets people back a forecast of an event's date with capital. It serves
-analysts, researchers and participants who have a timing estimate and want its
-accuracy to matter when the event happens.
+Manteon lets people put capital behind a forecast of an event's date. A pool
+brings those forecasts together and rewards a combination of **capital committed
+and closeness to the accepted event date**.
 
-Each pool fixes the event, collateral, participation schedule and accuracy curve
-before deposits begin. Participants choose a UTC date and stake tokens. Once
-the event is accepted, closer forecasts give each unit of capital more weight
-in the distribution. H30, H15 and H7 halve ideal accuracy weight every 30, 15 or
-7 days of error. The chosen curve never changes for an existing pool.
+An analyst might forecast when a company will complete an IPO. A token holder
+might forecast when a fixed market price will cross a target. In each case,
+participants answer a timing question by choosing a UTC calendar date.
 
-The capital distribution shows funded forecasts. It is not a calibrated
-probability, and neither a large stake nor a close forecast guarantees profit.
-Payouts include any returned principal; participants can lose money. Positive
-profit alone pays the pool's fixed fee, capped at 20%, with the platform share
-included in that fee. Transaction costs are separate.
+## What participants agree to
 
-Two event mechanisms share participation and payout accounting:
+Before participation begins, each pool fixes its event rule, collateral token,
+opening time, entry close, horizon, accuracy curve and fee terms. It also
+commits to a rules document. Those terms cannot be edited for that pool.
 
-- **Company IPO:** a proposed actual date is reviewed under committed evidence
-  rules through Tekmerion. An underfunded challenge may accept a proposal
-  optimistically; a funded challenge requires the appointed auditors' verdict.
-- **Token price threshold crossing:** anyone can confirm a fixed Raydium CPMM
-  rule from authenticated prices. The recorded time is successful on-chain
-  confirmation, which can follow the underlying price move.
+The opening and entry close define when capital can enter. The horizon defines
+when owners can recover capital from a pool that remains unresolved and Active.
+For price events, it is also the last possible confirmation time. IPO review
+can continue beyond the horizon.
 
-A deposit creates a 48-hour withdrawal allowance for new capital, ending no
-later than entry close. After the horizon, owners can exit while the pool
-remains unresolved and Active. Exited capital is removed from subsequent
-distribution. An accepted event before entry close returns principal; expired
-price monitoring also enables principal refunds.
+Owners may back several dates. Capital on the same date is grouped for
+settlement, but each owner's stake remains a separate entitlement.
 
-Applications make rules and evidence readable and prepare transactions. The
-program independently checks signatures, dates, source accounts, review
-bindings, balances and entitlement consumption. Saved documents can be
-verified against chain commitments, and unavailable archives do not remove
-eligible withdrawal, exit or claim rights.
+## How accuracy affects a payout
 
-See [how it works](how-it-works.md) for the flow and
+Each unit of capital receives more weight when its chosen date is closer to the
+accepted UTC event date. The error is the absolute number of calendar days, so
+early and late forecasts with the same error receive the same coefficient.
+
+The pool selects one of three curves:
+
+| Curve | Additional error that halves ideal accuracy weight |
+| ----- | -------------------------------------------------: |
+| H30   |                                            30 days |
+| H15   |                                            15 days |
+| H7    |                                             7 days |
+
+H7 puts more emphasis on precise dates; H30 reduces weight more gradually. The
+curve belongs to the pool and stays fixed. Every additional half-life halves
+ideal weight again: one half-life gives one-half weight, two give one-quarter.
+
+Suppose an H15 pool contains two equal stakes of 100 tokens. One forecast is
+exact and the other misses by 15 days. Their weights are in a two-to-one ratio,
+so the 200-token pool allocates approximately 133 and 67 tokens before fees and
+token-unit rounding. The second owner loses capital even though the forecast
+was only fifteen days away.
+
+A larger stake can outweigh a more accurate smaller stake. Payouts include any
+returned principal, and a close forecast does not guarantee a profit. The pool
+shows funded forecasts; interpreting them as calibrated probabilities requires
+an additional model.
+
+## How the event becomes accepted
+
+**Company IPO.** A proposer reports when the company actually completed its
+public IPO and deposits a separate review bond. Tekmerion gives participants
+time to fund a challenge. An underfunded challenge can accept the report
+optimistically; a fully funded challenge requires agreement among the appointed
+auditors. External evidence and the committed agreement define the question.
+
+**Token price threshold crossing.** Any wallet can submit the fixed price
+sources. Manteon requires both an interval average and the current spot price
+to satisfy the target, with the full uncertainty bounds on the required side.
+The event time is the successful on-chain confirmation time, which can follow
+the underlying market move. This path uses no review bond or auditors.
+
+## Keeping or recovering capital
+
+New capital receives a 48-hour withdrawal allowance, usable only before entry
+closes and while the pool remains Active. A top-up during an existing allowance
+does not extend its deadline. After it expires, a new deposit gives an allowance
+for that new amount alone.
+
+At the horizon, owners can exit with their remaining principal while the pool
+is Active, including during pending IPO review. Exited capital leaves the
+future distribution. Once an accepted result freezes the pool for settlement,
+withdrawals and exits stop.
+
+An accepted occurrence before entry close returns principal instead of running
+a competition. Expired price monitoring also enables principal refunds. These
+rights require explicit owner transactions; reaching a date does not move money.
+
+The fixed profit fee applies only to positive profit and is capped at 20%. The
+platform receives an agreed share of that fee. Losses, withdrawals, exits and
+principal refunds incur no protocol profit fee; transaction costs are separate.
+
+Applications present readable rules, evidence and wallet actions. The protocol
+checks each transaction against its recorded terms. Document availability and
+the service's responsiveness do not remove eligible owner withdrawal, exit or
+claim rights.
+
+See [how it works](how-it-works.md) for the lifecycle and
 [the specification](protocol.md) for exact boundaries and arithmetic.
