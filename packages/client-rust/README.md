@@ -1,31 +1,39 @@
 # Manteon Rust account reader
 
-`manteon-client` validates supplied account snapshots and re-exports the
-program's account, instruction, state and result types. It shares the Anchor
-workspace and lockfile; it performs no RPC request, signing or transaction
-submission.
+`manteon-client` helps Rust applications interpret Manteon account snapshots
+without trusting deserialization alone. It validates the relationships among a
+pool, its configuration, event and collateral vault, then returns their recorded
+facts and observed backing balance.
 
-Use `read_pool(pool, config, event, vault)` with `AccountInfo` snapshots acquired
-from the intended network and a consistent read checkpoint. It checks owner,
-complete layout, canonical addresses, reciprocal membership, lifecycle
-accounting and vault backing. `PoolView` returns decoded Config/Pool/Event,
-observed vault balance and unallocated balance. Donations are separate from
-participating principal and confer no withdrawal right.
+The reader checks program ownership, complete account layouts, canonical
+identities, reciprocal membership, lifecycle accounting and vault backing.
+Extra vault tokens are reported separately from recorded liabilities. Donations
+confer no stake or withdrawal right.
 
-`read_price_monitor(pool_key, pool, event, monitor_account)` validates the
-optional canonical monitor against a validated price Pool/Event pair from the
-same bank. `monitor_account` is `Option<&AccountInfo>`: absence is valid only
-for a Draft; activated price pools require their monitor account. The crate
-also re-exports the program's price reader for consumers that acquire
-authenticated source snapshots.
+Price monitoring has an additional read for the retained observation baseline.
+Acquire it at the same checkpoint as the pool and event. A Draft can lack a
+monitor; activated price pools retain one, with a baseline while Active and
+none after confirmation or expiry. General pool and claim reads do not require
+that monitoring account.
 
-These checks do not establish RPC honesty, finality, document integrity or
-Tekmerion Policy readiness. The acquisition layer owns network/commitment
-selection; the contract still validates every transaction when executed.
+## Integration and limits
 
-Add a path dependency on this package and select the matching `mainnet` or
-`devnet` feature. Consumers must compile with the program's compatible Anchor
-and Solana types. See [Cargo.toml](Cargo.toml), [public API](src/lib.rs) and the
-[protocol specification](../../docs/protocol.md). The standalone
-`bash scripts/check-anchor.sh` at repository root checks this workspace and its
-VM integration.
+The application acquires all snapshots from its intended network at a consistent
+checkpoint and chosen commitment. Local validation does not establish RPC
+honesty, network finality, document integrity or an accepted Tekmerion review.
+The pool's review-policy reference alone does not establish policy readiness.
+Every submitted transaction is validated again by the contract when executed.
+
+The package performs no RPC request, signing or transaction submission. It also
+exposes the protocol's instruction, state and canonical-result types and its
+price-source reader, so consumers can use compatible representations.
+
+Add it as a path dependency and select the network profile matching the program.
+The default is `mainnet`; a `devnet` consumer must disable the default feature
+and select `devnet`. Use compatible Anchor and Solana types. See
+[the protocol specification](../../docs/protocol.md) and
+[event rules](../../docs/events.md) for the meaning of the returned facts.
+
+The package shares the Anchor workspace. From the Manteon repository root,
+`bash scripts/check-anchor.sh` checks it and its local VM integration. See
+[build requirements](../../docs/build.md) for first-time restoration.

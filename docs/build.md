@@ -1,6 +1,6 @@
 # Build and checks
 
-Run from the Manteon repository root, with its nested dependency initialized:
+Run the standalone checks from the Manteon repository root:
 
 ```sh
 git submodule update --init --recursive
@@ -8,25 +8,33 @@ bash scripts/check.sh --restore
 ```
 
 Use Bash, Python 3.11+, rustup and a C build toolchain, including `pkg-config`
-and OpenSSL development headers for host tooling. Initial restoration downloads
-pinned compilers/tools and locked dependencies. Later runs reuse those inputs
-and build offline. No wallet, validator, RPC, account funding or application
-checkout is required.
+and OpenSSL development headers for host tooling. The first restoration
+downloads pinned compilers/tools and locked dependencies. Later runs reuse them
+and build offline. These checks require no application checkout, wallet,
+validator, RPC endpoint or funded account.
 
-| Command                                  | Work                                                                                       |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `bash scripts/check.sh --restore`        | Restore all pinned inputs, then run core and Anchor checks.                                |
-| `bash scripts/check.sh`                  | Run both suites with offline locked inputs.                                                |
-| `bash scripts/check-core.sh`             | Core formatting, Clippy, Rust tests/example and independent Python references.             |
-| `bash scripts/check-anchor.sh --restore` | Restore contract tools/dependencies, then build/check both SBF programs, IDL and VM tests. |
-| `bash scripts/check-anchor.sh`           | Run the contract suite offline.                                                            |
+## Commands
 
-The compiler graphs remain separate: the pure core is the root Cargo workspace;
-the Anchor workspace includes the Rust account reader; LiteSVM has its own
-workspace and lockfile. This prevents runtime dependencies from entering the
-pure core.
+| Command                                  | Work                                                                                                                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `bash scripts/check.sh --restore`        | Restore pinned inputs, then run both suites.                                                                                 |
+| `bash scripts/check.sh`                  | Run both suites with offline, locked inputs.                                                                                 |
+| `bash scripts/check-core.sh`             | Check core formatting, Clippy, Rust tests/example and independent Python references.                                         |
+| `bash scripts/check-anchor.sh --restore` | Restore contract tools/dependencies, then run the contract suite.                                                            |
+| `bash scripts/check-anchor.sh`           | Check formatting/Clippy, build both SBF programs and the Manteon IDL, verify interface compatibility and run local VM tests. |
 
-| Input                     | Pin                    |
+The Python references can also run independently of Rust:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/reference -p 'test_*.py' -v
+```
+
+## Reproducible tools
+
+The scripts keep the pure calculation, Anchor and VM compiler environments
+separate and select their pinned versions automatically.
+
+| Tool                      | Version                |
 | ------------------------- | ---------------------- |
 | Core Rust                 | 1.85.1                 |
 | Anchor host Rust          | 1.89.0                 |
@@ -37,25 +45,35 @@ pure core.
 | Solana SBF platform tools | v1.53, architecture v0 |
 | LiteSVM                   | 0.16.0                 |
 
-The checked build uses the default mainnet audit profile. `mainnet` and `devnet`
-features select Tekmerion's public USDC identity; the Manteon program ID stays
-fixed. A manual devnet build must explicitly retain the strict entrypoint:
+## Network profile and outputs
+
+The checked build uses the default mainnet profile. The `mainnet` and `devnet`
+features select supported Raydium and USDC identities, including Tekmerion's
+review-bond mint. The Manteon program identity stays fixed. A manual devnet
+build must explicitly retain the strict entrypoint:
 
 ```sh
 cargo-build-sbf --manifest-path programs/manteon/Cargo.toml --no-default-features --features strict-entrypoint,devnet --tools-version v1.53 --arch v0
 ```
 
-Use the corresponding Tekmerion profile when deploying it. Applications and
-consumers must use matching network identities. The standalone checks build
-locally and do not establish a deployment or execute public-network transfers.
+Use the corresponding Tekmerion profile when building it. Applications must
+select matching network identities. A local build does not establish a public
+network deployment or execute public-network transfers.
 
-Outputs are ignored under `target/`: SBF programs at
-`target/deploy/manteon.so` and `target/deploy/tekmerion.so`, generated IDL at
-`target/idl/manteon.json`, generated TypeScript types at
-`target/types/manteon.ts`, and isolated host/build-tool directories. Generated
-IDL is compared structurally with [idl/manteon.json](../idl/manteon.json).
-The checked build rejects SBF compiler errors and unknown syscall diagnostics.
+Generated files are ignored under `target/`. Deployable program outputs are
+`target/deploy/manteon.so` and `target/deploy/tekmerion.so`; the generated Manteon
+interface is `target/idl/manteon.json` with TypeScript types at
+`target/types/manteon.ts`. The checks compare generated and maintained IDL
+structurally and reject SBF compiler errors and unknown-syscall diagnostics.
 
-These outputs are development/check artifacts, without release provenance or
-deployment keys. See [test coverage](../tests/README.md) and
-[the actual check script](../scripts/check-anchor.sh).
+## What the tests establish
+
+Core tests and independent numerical references check H30/H15/H7 coefficients,
+withdrawal allowances, fees and payouts. Local LiteSVM tests execute the real
+Manteon and pinned Tekmerion SBF programs with controlled clocks and funds,
+including custody, review integration, lifecycle transitions, failed-transaction
+rollback and duplicate-claim protection.
+
+These tests establish local contract behavior. Controlled IPO evidence and
+price-source fixtures do not establish factual IPO truth, live price-source
+availability, auditor independence or deployed program identity.

@@ -1,47 +1,50 @@
 # Protocol tests
 
-Run from the standalone Manteon repository root. Tests use controlled inputs
-and local temporary funds; they establish supported execution behavior without
-an application, wallet, validator or RPC endpoint.
+The standalone tests check numerical rules and execute the protocol locally
+with controlled clocks and funds. They require no application, wallet,
+validator or RPC endpoint.
 
-| Layer                                                 | Scope                                                                                                              |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [Core](../packages/core/tests)                        | Checked amounts, UTC guards, H30/H15/H7, allowances, principal accounting, fees and payout quotes.                 |
-| [References](reference)                               | Independent high-precision Decimal and integer models for coefficients and floored allocations.                    |
-| [Anchor and LiteSVM](manteon/contract.rs)             | Real Manteon and pinned Tekmerion SBF execution, authenticated CPI, token custody, lifecycle, replay and rollback. |
-| [Rust reader](../packages/client-rust/src/read.rs)    | Authentic account-graph reads and rejection cases exercised in the VM suite.                                       |
-| [Shared vectors](fixtures/participation-vectors.json) | Canonical account layouts and participation cases for consumers.                                                   |
-| [IDL checks](manteon/cases/idl.rs)                    | Maintained/generated interface compatibility and client wire encoding.                                             |
+## Run the checks
 
-First initialize the pinned dependency and restore tools:
+From the Manteon repository root:
 
 ```sh
 git submodule update --init --recursive
 bash scripts/check.sh --restore
 ```
 
-Later `bash scripts/check.sh` combines core and contract checks offline.
-`bash scripts/check-core.sh` runs pure checks; `bash scripts/check-anchor.sh`
-builds both programs and IDL, checks formatting/Clippy, and executes host and VM
-tests. [Build requirements and tool pins](../docs/build.md) are separate from
-consumer application tests.
+Later runs use `bash scripts/check.sh` with offline, locked inputs.
+`bash scripts/check-core.sh` runs the calculation checks;
+`bash scripts/check-anchor.sh` builds both protocols and the Manteon interface
+and runs the contract checks. See [build requirements and tool pins](../docs/build.md).
 
-Python references can run without Rust:
+The independent Python numerical references can run without Rust:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/reference -p 'test_*.py' -v
 ```
 
-The [VM fixture](manteon/support/context.rs) shares actors, Clock control,
-canonical account setup and exact token-balance assertions. Scenarios cover
-Config reservation/reuse, governance, withdrawals and horizon exits, both event
-types, service fallback, review retries, settlement batches, profit fees, zero
-payout consumption, failed CPI rollback and duplicate claims.
+## What is verified
 
-IPO fixtures verify nonfuture occurrence facts and authenticated review outcomes;
-the contract does not establish the truth of external company facts. Price
-fixtures execute both directions, source conversion, stale/substituted sources,
-failed crossings and expiry refunds. Controlled Raydium/Pyth account bytes do
-not prove live provider availability or economic fair value. Local committee
-signatures test the actual review rules, without proving live auditors' factual
-judgment or deployed program identity.
+| Test layer                       | Purpose                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Core calculations                | Checked amounts, UTC boundaries, H30/H15/H7 accuracy, withdrawal allowances, principal accounting, fees and payout quotes. |
+| Independent numerical references | Certify exact coefficient floors and token-unit allocations using high-precision and integer models.                       |
+| Local contract execution         | Run the real Manteon and pinned Tekmerion SBF programs in LiteSVM, including review integration and token transfers.       |
+| Account-reader checks            | Accept authentic related snapshots and reject invalid identities, layouts, relationships and accounting.                   |
+| Interface compatibility          | Check that maintained and generated interfaces agree and that consumer instruction encoding is compatible.                 |
+
+Contract scenarios cover configuration reuse, governance, withdrawals and
+horizon exits, both event mechanisms, service fallback, review retries,
+settlement batches, profit fees, zero-payout claims and duplicate-payment
+protection. Failed transactions also verify that state changes and transfers
+roll back together.
+
+IPO tests verify time validation and authenticated review outcomes. External
+company facts remain an evidence-review responsibility. Price tests cover both
+crossing directions, supported USD conversions, stale or substituted sources,
+failed confirmations and expiry refunds.
+
+Controlled source data and local auditor signatures establish execution
+behavior. They do not prove live provider availability, factual IPO truth,
+auditor independence, economic fair value or public-network deployment.
