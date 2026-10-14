@@ -1783,6 +1783,7 @@ dependencies = [
  "litesvm",
  "manteon",
  "manteon-client",
+ "manteon-core",
  "serde_json",
  "solana-account",
  "solana-address 2.6.1",

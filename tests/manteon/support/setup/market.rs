@@ -133,7 +133,7 @@ impl TestContext {
         )
     }
 
-    fn with_event_schedule(
+    pub(crate) fn with_event_schedule(
         opens_at: i64,
         lock_at: i64,
         horizon_at: i64,
