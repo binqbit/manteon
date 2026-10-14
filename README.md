@@ -14,6 +14,9 @@ Manteon is independent of any application. An application presents pools,
 evidence and documents and prepares wallet transactions. The protocol enforces
 the agreed schedule, signatures, transfers and settlement rules.
 
+Release version: **0.9.0**. This is a pre-beta development release on the path
+to the first stable **1.0.0** release.
+
 ## Read the protocol
 
 | Guide                                      | What it explains                                                    |
