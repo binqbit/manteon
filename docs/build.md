@@ -53,12 +53,17 @@ review-bond mint. The Manteon program identity stays fixed. A manual devnet
 build must explicitly retain the strict entrypoint:
 
 ```sh
-cargo-build-sbf --manifest-path programs/manteon/Cargo.toml --no-default-features --features strict-entrypoint,devnet --tools-version v1.53 --arch v0
+cargo-build-sbf --manifest-path programs/manteon/Cargo.toml \
+  --sbf-out-dir target/devnet/deploy \
+  --no-default-features --features strict-entrypoint,devnet \
+  --tools-version v1.53 --arch v0
 ```
 
 Use the corresponding Tekmerion profile when building it. Applications must
 select matching network identities. A local build does not establish a public
 network deployment or execute public-network transfers.
+
+The explicit devnet output directory keeps the mainnet binaries separate.
 
 Generated files are ignored under `target/`. Deployable program outputs are
 `target/deploy/manteon.so` and `target/deploy/tekmerion.so`; the generated Manteon
