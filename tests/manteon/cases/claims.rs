@@ -471,3 +471,116 @@ fn deficient_custody_blocks_freeze_and_claim_even_when_one_owner_could_be_paid()
         assert_eq!(context.token_balance(vault), 200 - amount);
     }
 }
+
+#[test]
+fn recipient_closure_or_authority_change_cannot_block_a_winning_claim() {
+    for close_recipient in [false, true] {
+        let mut context = TestContext::with_profit_fee_recipient(2000, false);
+        let alice = context.alice.insecure_clone();
+        let bob = context.bob.insecure_clone();
+        let service = context.service.insecure_clone();
+        context.activate();
+        context.set_time(OPEN);
+        context.send(
+            &[
+                context.stake_ix(&alice, context.alice_token, FORECAST, 1000),
+                context.stake_ix(&bob, context.bob_token, FORECAST + 30, 1000),
+            ],
+            &[&alice, &bob],
+        );
+        let mut result = ResultFixture::new(&context);
+        context.set_time(FORECAST * DAY);
+        result.record_time(&context);
+        let case = CaseFixture::start(&mut context, &result);
+        case.finalize_yes(&mut context);
+        context.send(
+            &[
+                case.begin_ix(&context, &service),
+                case.process_ix(&context, &service, &[FORECAST, FORECAST + 30]),
+                case.finalize_ix(&context, &service),
+            ],
+            &[&service],
+        );
+        let recipient_authority = context.pool_state().fee_recipient;
+        assert_eq!(recipient_authority, pubkey(context.payer.pubkey()));
+        if close_recipient {
+            let drain = spl_token::instruction::transfer(
+                &spl_token::ID,
+                &pubkey(context.fee_recipient),
+                &pubkey(context.bob_token),
+                &recipient_authority,
+                &[],
+                context.token_balance(context.fee_recipient),
+            )
+            .unwrap();
+            let close = spl_token::instruction::close_account(
+                &spl_token::ID,
+                &pubkey(context.fee_recipient),
+                &recipient_authority,
+                &recipient_authority,
+                &[],
+            )
+            .unwrap();
+            context.send(&[drain, close], &[]);
+        } else {
+            let change = spl_token::instruction::set_authority(
+                &spl_token::ID,
+                &pubkey(context.fee_recipient),
+                Some(&pubkey(bob.pubkey())),
+                spl_token::instruction::AuthorityType::AccountOwner,
+                &recipient_authority,
+                &[],
+            )
+            .unwrap();
+            context.send(&[change], &[]);
+            let stale = claim_ix(&context, &alice, FORECAST, pubkey(context.alice_token));
+            context.reject(
+                &[stale],
+                &[&alice],
+                custom(0, ManteonError::InvalidFeeRecipient),
+            );
+        }
+        // The participant can create a replacement and claim atomically, without
+        // a recipient signature. Here its recorded authority is the transaction payer.
+        context.svm.airdrop(&alice.pubkey(), 10_000_000).unwrap();
+        let replacement = solana_keypair::Keypair::new_from_array([0xed; 32]);
+        let create = anchor_lang::solana_program::system_instruction::create_account(
+            &pubkey(alice.pubkey()),
+            &pubkey(replacement.pubkey()),
+            context
+                .svm
+                .minimum_balance_for_rent_exemption(spl_token::state::Account::LEN),
+            spl_token::state::Account::LEN as u64,
+            &spl_token::ID,
+        );
+        let initialize = spl_token::instruction::initialize_account3(
+            &spl_token::ID,
+            &pubkey(replacement.pubkey()),
+            &pubkey(context.mint),
+            &recipient_authority,
+        )
+        .unwrap();
+        let mut claim = claim_ix(&context, &alice, FORECAST, pubkey(context.alice_token));
+        claim.accounts[10].pubkey = replacement.pubkey();
+        let before = context.token_balance(context.alice_token);
+        crate::support::transactions::send(
+            &mut context.svm,
+            &alice,
+            &[create, initialize, claim],
+            &[&replacement],
+        )
+        .unwrap();
+        assert_eq!(context.token_balance(context.alice_token) - before, 1267);
+        assert_eq!(context.token_balance(replacement.pubkey()), 53);
+        assert_eq!(context.pool_state().fee_recipient, recipient_authority);
+        assert_eq!(
+            context.stake_state(&alice, FORECAST).state,
+            StakeState::Paid
+        );
+        let mut loss = claim_ix(&context, &bob, FORECAST + 30, pubkey(context.bob_token));
+        loss.accounts[10].pubkey = address(manteon::ID);
+        loss.accounts[10].is_writable = false;
+        context.send(&[loss], &[&bob]);
+        assert!(context.pool_state().config_released);
+    }
+}

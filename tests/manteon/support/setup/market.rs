@@ -201,6 +201,7 @@ impl TestContext {
         let bob_token = create_token(&mut config, 0xb5, bob.pubkey(), collateral);
         if fees.1 {
             config.fee_recipient = alice_token;
+            config.fee_authority = pubkey(alice.pubkey());
         }
         config.create(config.instruction(&config_key), &config_key);
         // The USDC address is external: there is no test keypair for its mint.

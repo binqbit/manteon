@@ -40,6 +40,9 @@ settlement batches, profit fees, zero-payout claims and duplicate-payment
 protection. Failed transactions also verify that state changes and transfers
 roll back together.
 
+Fee tests verify that closing or changing a recipient account cannot bind a
+winner's claim to that address; a replacement can be created and paid atomically.
+
 IPO tests verify time validation and authenticated review outcomes. External
 company facts remain an evidence-review responsibility. Price tests cover both
 crossing directions, supported USD conversions, stale or substituted sources,

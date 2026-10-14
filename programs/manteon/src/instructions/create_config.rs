@@ -45,15 +45,6 @@ pub struct CreateConfig<'info> {
             @ ManteonError::UnsupportedCollateral
     )]
     pub collateral_mint: Account<'info, Mint>,
-    /// An initialized, unfrozen destination for this exact collateral mint.
-    #[account(
-        constraint = fee_recipient.mint == collateral_mint.key()
-            @ ManteonError::InvalidFeeRecipient,
-        constraint = fee_recipient.state == spl_token::state::AccountState::Initialized
-            @ ManteonError::InvalidFeeRecipient
-    )]
-    pub fee_recipient: Account<'info, TokenAccount>,
-
     /// One shared collection vault per mint, controlled by GlobalConfig.
     /// A configuration author cannot choose its authority or withdraw fees.
     #[account(
@@ -78,6 +69,7 @@ pub(crate) fn handle(
     ctx: Context<CreateConfig>,
     service_authority: Pubkey,
     audit_config: Pubkey,
+    fee_recipient: Pubkey,
     profit_fee_bps: u16,
     expected_platform_share_bps: u16,
 ) -> Result<()> {
@@ -86,7 +78,7 @@ pub(crate) fn handle(
         active_pools: 0,
         service_authority,
         collateral_mint: ctx.accounts.collateral_mint.key(),
-        fee_recipient: ctx.accounts.fee_recipient.key(),
+        fee_recipient,
         profit_fee_bps,
         platform_share_bps: ctx.accounts.global_config.platform_share_bps,
         audit_config,

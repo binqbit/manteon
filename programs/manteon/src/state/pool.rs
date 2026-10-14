@@ -19,7 +19,7 @@ pub struct Pool {
     pub event_id: Pubkey,
     pub collateral_mint: Pubkey,
     pub audit_config: Pubkey,
-    /// Economic terms remain historical facts after the Config is reused.
+    /// Fee recipient authority; retained even after the Config is reused.
     pub fee_recipient: Pubkey,
     pub profit_fee_bps: u16,
     pub platform_share_bps: u16,

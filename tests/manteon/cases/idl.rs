@@ -54,6 +54,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         &idl,
         "create_config",
         manteon::instruction::CreateConfig {
+            fee_recipient: Pubkey::new_from_array([0x60; 32]),
             service_authority: Pubkey::new_from_array([0x52; 32]),
             audit_config: Pubkey::new_from_array([0x53; 32]),
             profit_fee_bps: 0,
@@ -66,7 +67,6 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
             ("config", true, true),
             ("global_config", false, false),
             ("collateral_mint", false, false),
-            ("fee_recipient", false, false),
             ("platform_fee_vault", false, true),
             ("token_program", false, false),
             ("system_program", false, false),

@@ -37,6 +37,7 @@ pub struct ConfigContext {
     pub program_data: Address,
     pub mint: Address,
     pub fee_recipient: Address,
+    pub fee_authority: Pubkey,
     pub other_mint_recipient: Address,
     pub frozen_recipient: Address,
     pub uninitialized_mint: Address,
@@ -87,6 +88,7 @@ impl ConfigContext {
         let mut context = Self {
             svm,
             authority,
+            fee_authority: pubkey(payer.pubkey()),
             payer,
             program_data,
             mint: Address::default(),
@@ -262,7 +264,6 @@ impl ConfigContext {
                 global_config: manteon::state::GlobalConfig::address(),
                 platform_fee_vault: manteon::state::GlobalConfig::vault_address(&pubkey(self.mint)),
                 collateral_mint: pubkey(self.mint),
-                fee_recipient: pubkey(self.fee_recipient),
                 token_program: spl_token::ID,
                 system_program: anchor_lang::system_program::ID,
             }
@@ -270,6 +271,7 @@ impl ConfigContext {
             data: manteon::instruction::CreateConfig {
                 service_authority: self.service_authority,
                 audit_config: self.audit_config,
+                fee_recipient: self.fee_authority,
                 profit_fee_bps: self.profit_fee_bps,
                 expected_platform_share_bps: self
                     .svm

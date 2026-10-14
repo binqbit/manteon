@@ -235,12 +235,6 @@
           ]
         },
         {
-          "name": "fee_recipient",
-          "docs": [
-            "An initialized, unfrozen destination for this exact collateral mint."
-          ]
-        },
-        {
           "name": "platform_fee_vault",
           "docs": [
             "One shared collection vault per mint, controlled by GlobalConfig.",
@@ -268,6 +262,10 @@
         },
         {
           "name": "audit_config",
+          "type": "pubkey"
+        },
+        {
+          "name": "fee_recipient",
           "type": "pubkey"
         },
         {
@@ -829,12 +827,6 @@
           ]
         },
         {
-          "name": "fee_recipient",
-          "docs": [
-            "An initialized, unfrozen destination for this exact collateral mint."
-          ]
-        },
-        {
           "name": "platform_fee_vault",
           "docs": [
             "One shared collection vault per mint, controlled by GlobalConfig.",
@@ -862,6 +854,10 @@
         },
         {
           "name": "audit_config",
+          "type": "pubkey"
+        },
+        {
+          "name": "fee_recipient",
           "type": "pubkey"
         },
         {
@@ -1217,7 +1213,8 @@
           {
             "name": "fee_recipient",
             "docs": [
-              "Initialized token account for the selected collateral mint."
+              "Authority (wallet or PDA) owning accounts that receive the fee share.",
+              "A destination may be created atomically with claim; it need not exist now."
             ],
             "type": "pubkey"
           },
@@ -1441,7 +1438,7 @@
           {
             "name": "fee_recipient",
             "docs": [
-              "Economic terms remain historical facts after the Config is reused."
+              "Fee recipient authority; retained even after the Config is reused."
             ],
             "type": "pubkey"
           },

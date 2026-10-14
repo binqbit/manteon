@@ -149,6 +149,7 @@ fn anchor_017_financial_operations_require_canonical_encoding() {
         manteon::instruction::AcceptGlobalAdmin {}.data(),
         manteon::instruction::WithdrawPlatformFees { amount: 1 }.data(),
         manteon::instruction::CreateConfig {
+            fee_recipient: Pubkey::new_from_array([0x60; 32]),
             service_authority: Pubkey::new_from_array([0x51; 32]),
             audit_config: Pubkey::new_from_array([0x52; 32]),
             profit_fee_bps: 0,
@@ -156,6 +157,7 @@ fn anchor_017_financial_operations_require_canonical_encoding() {
         }
         .data(),
         manteon::instruction::UpdateConfig {
+            fee_recipient: Pubkey::new_from_array([0x60; 32]),
             service_authority: Pubkey::new_from_array([0x51; 32]),
             audit_config: Pubkey::new_from_array([0x52; 32]),
             profit_fee_bps: 1000,

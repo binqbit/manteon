@@ -70,7 +70,7 @@ fn permissionless_configs_snapshot_fees_without_moving_tokens() {
         let config = Config::try_deserialize(&mut account.data.as_slice()).unwrap();
         assert_eq!(config.service_authority, context.service_authority);
         assert_eq!(config.collateral_mint, pubkey(context.mint));
-        assert_eq!(config.fee_recipient, pubkey(context.fee_recipient));
+        assert_eq!(config.fee_recipient, context.fee_authority);
         assert_eq!(config.audit_config, context.audit_config);
         assert_eq!(config.profit_fee_bps, 2000);
         assert_eq!(config.platform_share_bps, 2000);
@@ -85,6 +85,7 @@ fn permissionless_configs_snapshot_fees_without_moving_tokens() {
 
     let mut repeated = context.instruction(&first);
     repeated.data = manteon::instruction::CreateConfig {
+        fee_recipient: Pubkey::new_from_array([0x60; 32]),
         service_authority: Pubkey::new_from_array([0x73; 32]),
         audit_config: Pubkey::new_from_array([0x74; 32]),
         profit_fee_bps: 0,
@@ -106,18 +107,15 @@ fn anchor_007_config_creation_enforces_authority_assets_and_atomic_rollback() {
         GlobalConfig::address(),
         context.audit_config,
     );
-    let mut wrong_mint = base.clone();
-    replace_account(
-        &mut wrong_mint,
-        pubkey(context.fee_recipient),
-        pubkey(context.other_mint_recipient),
-    );
-    let mut frozen = base.clone();
-    replace_account(
-        &mut frozen,
-        pubkey(context.fee_recipient),
-        pubkey(context.frozen_recipient),
-    );
+    let mut zero_recipient = base.clone();
+    zero_recipient.data = manteon::instruction::CreateConfig {
+        service_authority: context.service_authority,
+        audit_config: context.audit_config,
+        fee_recipient: Pubkey::default(),
+        profit_fee_bps: 0,
+        expected_platform_share_bps: 2000,
+    }
+    .data();
     let mut wrong_token_program = base.clone();
     replace_account(&mut wrong_token_program, spl_token::ID, token_2022_id);
     let mut uninitialized_mint = base.clone();
@@ -128,6 +126,7 @@ fn anchor_007_config_creation_enforces_authority_assets_and_atomic_rollback() {
     );
     let mut zero_service = base.clone();
     zero_service.data = manteon::instruction::CreateConfig {
+        fee_recipient: Pubkey::new_from_array([0x60; 32]),
         service_authority: Pubkey::default(),
         audit_config: context.audit_config,
         profit_fee_bps: 0,
@@ -136,6 +135,7 @@ fn anchor_007_config_creation_enforces_authority_assets_and_atomic_rollback() {
     .data();
     let mut zero_audit = base;
     zero_audit.data = manteon::instruction::CreateConfig {
+        fee_recipient: Pubkey::new_from_array([0x60; 32]),
         service_authority: context.service_authority,
         audit_config: Pubkey::default(),
         profit_fee_bps: 0,
@@ -150,13 +150,8 @@ fn anchor_007_config_creation_enforces_authority_assets_and_atomic_rollback() {
             InstructionError::Custom(u32::from(ErrorCode::AccountNotInitialized)),
         ),
         (
-            "recipient for a different mint",
-            wrong_mint,
-            InstructionError::Custom(u32::from(ManteonError::InvalidFeeRecipient)),
-        ),
-        (
-            "frozen fee recipient",
-            frozen,
+            "zero recipient authority",
+            zero_recipient,
             InstructionError::Custom(u32::from(ManteonError::InvalidFeeRecipient)),
         ),
         (
@@ -213,11 +208,6 @@ fn anchor_007_config_rejects_native_sol_collateral_without_committing_rent() {
         &mut instruction,
         pubkey(context.mint),
         spl_token::native_mint::ID,
-    );
-    replace_account(
-        &mut instruction,
-        pubkey(context.fee_recipient),
-        pubkey(native_recipient),
     );
     replace_account(
         &mut instruction,
@@ -341,4 +331,31 @@ fn config_profit_fee_cap_is_enforced_by_contract() {
             .get_account(&address(GlobalConfig::vault_address(&pubkey(context.mint))))
             .is_none()
     );
+}
+
+#[test]
+fn fee_authorities_need_no_existing_receiving_account_and_may_be_pdas() {
+    let mut context = ConfigContext::new();
+    let pda = Pubkey::find_program_address(&[b"fee authority"], &manteon::ID).0;
+    for (index, fee_recipient) in [Pubkey::new_from_array([0xe7; 32]), pda]
+        .into_iter()
+        .enumerate()
+    {
+        let config = Keypair::new_from_array([0xe8 + index as u8; 32]);
+        assert!(context.svm.get_account(&address(fee_recipient)).is_none());
+        let mut instruction = context.instruction(&config);
+        instruction.data = manteon::instruction::CreateConfig {
+            service_authority: context.service_authority,
+            audit_config: context.audit_config,
+            fee_recipient,
+            profit_fee_bps: 2000,
+            expected_platform_share_bps: 2000,
+        }
+        .data();
+        context.create(instruction, &config);
+        let account = context.svm.get_account(&config.pubkey()).unwrap();
+        let stored = Config::try_deserialize(&mut account.data.as_slice()).unwrap();
+        assert_eq!(stored.fee_recipient, fee_recipient);
+        assert!(context.svm.get_account(&address(fee_recipient)).is_none());
+    }
 }

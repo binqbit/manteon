@@ -53,7 +53,6 @@ fn update(context: &TestContext, signer: &Keypair) -> Instruction {
             config: pubkey(context.config_address),
             global_config: manteon::state::GlobalConfig::address(),
             collateral_mint: pubkey(context.mint),
-            fee_recipient: pubkey(context.fee_recipient),
             platform_fee_vault: manteon::state::GlobalConfig::vault_address(&pubkey(context.mint)),
             token_program: spl_token::ID,
             system_program: anchor_lang::system_program::ID,
@@ -62,6 +61,7 @@ fn update(context: &TestContext, signer: &Keypair) -> Instruction {
         data: manteon::instruction::UpdateConfig {
             service_authority: pubkey(context.service.pubkey()),
             audit_config: context.policy,
+            fee_recipient: settings(context).fee_recipient,
             profit_fee_bps: 2000,
             expected_platform_share_bps: 2000,
         }

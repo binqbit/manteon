@@ -119,7 +119,7 @@ pub(crate) fn handle(ctx: Context<Claim>) -> Result<()> {
             .as_ref()
             .ok_or(ManteonError::InvalidFeeRecipient)?;
         require_keys_eq!(
-            recipient.key(),
+            recipient.owner,
             pool.fee_recipient,
             ManteonError::InvalidFeeRecipient
         );

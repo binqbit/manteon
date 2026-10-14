@@ -110,6 +110,7 @@ pub mod manteon {
         ctx: Context<CreateConfig>,
         service_authority: Pubkey,
         audit_config: Pubkey,
+        fee_recipient: Pubkey,
         profit_fee_bps: u16,
         expected_platform_share_bps: u16,
     ) -> Result<()> {
@@ -117,6 +118,7 @@ pub mod manteon {
             ctx,
             service_authority,
             audit_config,
+            fee_recipient,
             profit_fee_bps,
             expected_platform_share_bps,
         )
@@ -126,6 +128,7 @@ pub mod manteon {
         ctx: Context<UpdateConfig>,
         service_authority: Pubkey,
         audit_config: Pubkey,
+        fee_recipient: Pubkey,
         profit_fee_bps: u16,
         expected_platform_share_bps: u16,
     ) -> Result<()> {
@@ -133,6 +136,7 @@ pub mod manteon {
             ctx,
             service_authority,
             audit_config,
+            fee_recipient,
             profit_fee_bps,
             expected_platform_share_bps,
         )

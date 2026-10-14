@@ -119,9 +119,15 @@ flowchart LR
 
 Claims use the pool's retained terms. A global-share update affects Configs
 when they are created or edited while unused; it cannot rewrite an existing
-pool's rates. The fee recipient must be an initialized collateral-token
-account separate from the platform treasury. A claim needs the recipient
-account only when its calculated share is positive.
+pool's rates. The configured fee recipient is a nonzero authority: a wallet
+or PDA. No receiving account is required when the configuration is saved.
+A positive recipient share is paid directly to any initialized, unfrozen
+collateral-token account owned by that authority, distinct from the pool
+vault and platform treasury. The claimant may create that account in the
+same transaction, without a recipient signature. Closing or changing an old
+account therefore does not lock a winner's payout to that address. The
+claimant funds account rent when needed. Refunds, losses and zero recipient
+shares require no recipient account.
 
 ## Platform treasury
 

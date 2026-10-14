@@ -22,7 +22,7 @@ pub(crate) fn validate(
         .map_err(ManteonError::from)?;
     require_keys_neq!(
         settings.fee_recipient,
-        platform_fee_vault.key(),
+        Pubkey::default(),
         ManteonError::InvalidFeeRecipient
     );
     token::validate_vault(

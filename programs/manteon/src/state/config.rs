@@ -20,7 +20,8 @@ pub struct Config {
     // Prediction collateral and configured fee destination.
     /// Initialized legacy SPL mint selected for prediction collateral.
     pub collateral_mint: Pubkey,
-    /// Initialized token account for the selected collateral mint.
+    /// Authority (wallet or PDA) owning accounts that receive the fee share.
+    /// A destination may be created atomically with claim; it need not exist now.
     pub fee_recipient: Pubkey,
     /// Fee on positive gross profit, at most MAX_PROFIT_FEE_BPS.
     pub profit_fee_bps: u16,
