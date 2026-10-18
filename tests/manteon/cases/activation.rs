@@ -111,7 +111,7 @@ fn activation_closes_at_open_and_cannot_leave_a_policy_use_after_transaction_fai
 }
 
 #[test]
-fn activation_authenticates_event_mint_policy_client_and_executable() {
+fn activation_authenticates_event_policy_client_and_executable() {
     let mut context = TestContext::new();
     let service = context.service.insecure_clone();
     let sibling = context.create_pool(0xe0);
@@ -124,26 +124,20 @@ fn activation_authenticates_event_mint_policy_client_and_executable() {
             u32::from(ErrorCode::ConstraintRaw),
         ),
         (
-            "another valid mint is not the configured private asset",
-            4,
-            context.mint,
-            u32::from(ManteonError::InvalidEventMint),
-        ),
-        (
             "another account cannot replace the configured Policy",
-            5,
+            4,
             context.config_address,
             u32::from(ErrorCode::ConstraintAddress),
         ),
         (
             "a service signer cannot replace the client PDA",
-            6,
+            5,
             service.pubkey(),
             u32::from(ErrorCode::ConstraintSeeds),
         ),
         (
             "an executable cannot replace Tekmerion",
-            7,
+            6,
             address(manteon::ID),
             u32::from(ErrorCode::InvalidProgramId),
         ),

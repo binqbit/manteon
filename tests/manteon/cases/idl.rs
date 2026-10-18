@@ -76,9 +76,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         &idl,
         "create_pool",
         manteon::instruction::CreatePool {
-            event: manteon::state::EventDefinition::CompanyIpo {
-                token_mint: Pubkey::new_from_array([0x54; 32]),
-            },
+            event: manteon::state::EventDefinition::ExternalEvent,
             agreement_hash: [0xa1; 32],
             expected_config_hash: [0xa2; 32],
             algorithm: manteon::state::PoolAlgorithm::H30,
@@ -102,8 +100,8 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
     );
     assert_instruction(
         &idl,
-        "propose_company_ipo",
-        manteon::instruction::ProposeCompanyIpo {
+        "propose_external_event",
+        manteon::instruction::ProposeExternalEvent {
             data: manteon::state::EventResult {
                 extra: None,
                 occurred_at: 1_800_000_000,
@@ -196,7 +194,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
             "stake",
             "unstake",
             "exit",
-            "propose_company_ipo",
+            "propose_external_event",
             "begin_settlement",
             "process_positions",
             "finalize_settlement",

@@ -16,7 +16,7 @@ commits to a rules document. Those terms cannot be edited for that pool.
 
 The opening and entry close define when capital can enter. The horizon defines
 when owners can recover capital from a pool that remains unresolved and Active.
-For price events, it is also the last possible confirmation time. IPO review
+For price events, it is also the last possible confirmation time. External event review
 can continue beyond the horizon.
 
 Owners may back several dates. Capital on the same date is grouped for
@@ -53,8 +53,8 @@ an additional model.
 
 ## How the event becomes accepted
 
-**Company IPO.** A proposer reports when the company actually completed its
-public IPO and deposits a separate review bond. Tekmerion gives participants
+**External event.** A proposer reports when the event defined by the Agreement
+actually occurred and deposits a separate review bond. IPO is one possible Agreement template. Tekmerion gives participants
 time to fund a challenge. An underfunded challenge can accept the report
 optimistically; a fully funded challenge requires agreement among the appointed
 auditors. External evidence and the committed agreement define the question.
@@ -73,7 +73,7 @@ does not extend its deadline. After it expires, a new deposit gives an allowance
 for that new amount alone.
 
 At the horizon, owners can exit with their remaining principal while the pool
-is Active, including during pending IPO review. Exited capital leaves the
+is Active, including during pending external event review. Exited capital leaves the
 future distribution. Once an accepted result freezes the pool for settlement,
 withdrawals and exits stop.
 

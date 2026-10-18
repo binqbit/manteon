@@ -26,7 +26,7 @@ pub use instructions::{
     pool::complete_pool::CompletePool,
     pool::{activate_pool::ActivatePool, create_pool::CreatePool},
     price_threshold::{ActivatePricePool, PriceThresholdPool},
-    propose_company_ipo::ProposeCompanyIpo,
+    propose_external_event::ProposeExternalEvent,
     settlement::{
         begin_settlement::BeginSettlement, finalize_settlement::FinalizeSettlement,
         process_positions::ProcessPositions,
@@ -53,7 +53,7 @@ pub(crate) use instructions::{
     price_threshold::{
         __client_accounts_activate_price_pool, __client_accounts_price_threshold_pool,
     },
-    propose_company_ipo::__client_accounts_propose_company_ipo,
+    propose_external_event::__client_accounts_propose_external_event,
     settlement::{
         begin_settlement::__client_accounts_begin_settlement,
         finalize_settlement::__client_accounts_finalize_settlement,
@@ -202,11 +202,11 @@ pub mod manteon {
         instructions::participation::exit::handle(ctx)
     }
 
-    pub fn propose_company_ipo<'info>(
-        ctx: Context<'info, ProposeCompanyIpo<'info>>,
+    pub fn propose_external_event<'info>(
+        ctx: Context<'info, ProposeExternalEvent<'info>>,
         data: EventResult,
     ) -> Result<()> {
-        instructions::propose_company_ipo::handle(ctx, data)
+        instructions::propose_external_event::handle(ctx, data)
     }
 
     /// Consume authenticated Yes and freeze atomically; pre-LOCK events authorize refunds.

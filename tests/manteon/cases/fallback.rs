@@ -245,12 +245,7 @@ fn public_retry_keeps_earlier_eligibility_when_the_candidate_changes() {
         .get_account(&address(PoolContext::event(&context.pool)))
         .unwrap();
     let event = Event::try_deserialize(&mut event_account.data.as_slice()).unwrap();
-    assert_eq!(
-        event.definition,
-        EventDefinition::CompanyIpo {
-            token_mint: context.token_mint,
-        }
-    );
+    assert_eq!(event.definition, EventDefinition::ExternalEvent);
     assert_eq!(
         event.result.unwrap().occurred_at(),
         second_result.occurred_at

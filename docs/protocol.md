@@ -46,7 +46,7 @@ permits that same day.
 
 Creation also requires $D(t_h)-D(t_l) \leq E_H$. Forecast dates may extend
 beyond the horizon. Competitive event results must fall within the same date
-domain; pre-close occurrences instead enable principal refunds. IPO results
+domain; pre-close occurrences instead enable principal refunds. External event results
 can occur after the horizon within that domain. Price confirmation must execute
 no later than the horizon.
 
@@ -71,7 +71,7 @@ close, ordinary withdrawal stops. Event acceptance or monitoring expiry can
 end Active participation sooner.
 
 At $t \geq t_h$, an owner may exit with all remaining positive Stake
-principal while the pool remains Active. Pending or even finalized IPO review
+principal while the pool remains Active. Pending or even finalized external event review
 does not itself stop exit: applying the accepted report does. Transaction
 ordering decides whether exit or the transition to settlement/refunds happens
 first. Exited capital leaves all subsequent payout calculations and the Stake
@@ -128,8 +128,8 @@ duplicate accounts in a batch and zero-principal dates.
 
 Finalization enables claims only after every funded date has contributed and a
 nonempty pool has a positive denominator. An empty pool needs no date
-processing. IPO processing authenticates the accepted current review at every
-step and follows its [service window](events.md#company-ipo). Price processing
+processing. External event processing authenticates the accepted current review at every
+step and follows its [service window](events.md#external-event). Price processing
 is public immediately after confirmation.
 
 The owner then claims each positive-principal Stake. Competitive claims consume

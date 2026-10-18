@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct ProposeCompanyIpo<'info> {
+pub struct ProposeExternalEvent<'info> {
     // Signers.
     pub author: Signer<'info>,
     #[account(mut)]
@@ -78,7 +78,7 @@ pub struct ProposeCompanyIpo<'info> {
 }
 
 pub(crate) fn handle<'info>(
-    ctx: Context<'info, ProposeCompanyIpo<'info>>,
+    ctx: Context<'info, ProposeExternalEvent<'info>>,
     data: EventResult,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
@@ -172,7 +172,7 @@ fn validate_previous_case(
     Ok(())
 }
 
-impl<'info> ProposeCompanyIpo<'info> {
+impl<'info> ProposeExternalEvent<'info> {
     /// Fund one Case through the SDK and authenticate the resulting audit state.
     fn create_case(
         &self,

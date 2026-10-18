@@ -13,9 +13,9 @@ flowchart TD
     Active --> Entry["Owners fund date forecasts during entry"]
     Entry --> Withdrawal["Owners withdraw eligible new capital"]
     Active --> Event{"Accept the event"}
-    Event --> IPO["IPO report completes Tekmerion review"]
+    Event --> External["external event report completes Tekmerion review"]
     Event --> Price["Price average and spot confirm the target"]
-    IPO --> Timing{"Occurrence before entry close?"}
+    External --> Timing{"Occurrence before entry close?"}
     Price --> Timing
     Timing -->|Yes| Refund["Enable principal refunds"]
     Timing -->|No| Freeze["Freeze the remaining capital and dates"]
@@ -45,7 +45,7 @@ flowchart LR
     Pool --> Position["Position: capital at one forecast date"]
     Position --> Stake["Stake: one owner's capital and claim right"]
     Pool --> Vault["Vault: this pool's prediction collateral"]
-    Event -->|"IPO candidate"| Review["Tekmerion Case: separate review and USDC funds"]
+    Event -->|"external event candidate"| Review["Tekmerion Case: separate review and USDC funds"]
 ```
 
 The prediction vault is governed by participation and payout rules. Review
@@ -53,7 +53,7 @@ bonds and challenge funds belong to Tekmerion's separate custody. Service,
 configuration and governance roles do not gain discretionary access to
 prediction principal.
 
-## IPO transaction sequence
+## External event transaction sequence
 
 ```mermaid
 sequenceDiagram
@@ -65,7 +65,7 @@ sequenceDiagram
     Service->>M: Create and activate the pool before opening
     M->>T: Retain the pool's review policy
     Owner->>M: Fund a chosen UTC date while entry is open
-    Service->>M: Propose IPO occurrence facts
+    Service->>M: Propose external event occurrence facts
     M->>T: Open a review with the author's separate USDC bond
     Review->>T: Fund a challenge; vote if it reaches its target
     T->>T: Finalize acceptance, rejection, Unknown or timeout
@@ -84,7 +84,7 @@ horizon-exit rules.
 
 Rejection, an Unknown verdict or technical failure allows a new paid attempt.
 Earlier review withdrawals remain available in Tekmerion. Other wallets gain
-proposal and settlement access after the [defined service windows](events.md#company-ipo).
+proposal and settlement access after the [defined service windows](events.md#external-event).
 
 ## Price transaction sequence
 

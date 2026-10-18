@@ -8,7 +8,7 @@ use crate::{
     validation::admission,
 };
 
-/// Every settlement phase authenticates either the accepted IPO Case or a verified price result.
+/// Every settlement phase authenticates either the accepted external Case or a verified price result.
 pub(crate) fn authorize(
     caller: Pubkey,
     config: &Config,

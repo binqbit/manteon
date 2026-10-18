@@ -46,7 +46,7 @@ declare_process_instruction!(Relay, 1, |context| {
 });
 
 fn finalization() -> Vec<u8> {
-    manteon::instruction::ProposeCompanyIpo {
+    manteon::instruction::ProposeExternalEvent {
         data: EventResult {
             extra: None,
             occurred_at: 1_800_000_000,
@@ -166,9 +166,7 @@ fn anchor_017_financial_operations_require_canonical_encoding() {
         .data(),
         manteon::instruction::CompletePool {}.data(),
         manteon::instruction::CreatePool {
-            event: manteon::state::EventDefinition::CompanyIpo {
-                token_mint: Pubkey::new_from_array([0x53; 32]),
-            },
+            event: manteon::state::EventDefinition::ExternalEvent,
             agreement_hash: [0xa1; 32],
             expected_config_hash: [0xa2; 32],
             algorithm: manteon::state::PoolAlgorithm::H30,

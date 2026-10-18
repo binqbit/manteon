@@ -89,7 +89,7 @@ fn candidate_submission_authenticates_author_asset_client_and_auditor_before_cre
         .is_signer = false;
     context.reject(&[unsigned], &[], custom(ErrorCode::AccountNotSigner));
     let mut mismatched_candidate = valid.clone();
-    mismatched_candidate.data = manteon::instruction::ProposeCompanyIpo {
+    mismatched_candidate.data = manteon::instruction::ProposeExternalEvent {
         data: manteon::state::EventResult {
             extra: Some(manteon::state::EventResultExtra::PriceVerification {
                 lower_usd_e9: 2_000_000_000,

@@ -71,9 +71,7 @@ impl TestContext {
             }
             .to_account_metas(None),
             data: manteon::instruction::CreatePool {
-                event: manteon::state::EventDefinition::CompanyIpo {
-                    token_mint: self.token_mint,
-                },
+                event: manteon::state::EventDefinition::ExternalEvent,
                 agreement_hash: [0xa1; 32],
                 expected_config_hash: self.config_terms_hash(),
                 algorithm: schedule.algorithm,
@@ -270,7 +268,6 @@ impl TestContext {
             config,
             config_address: config_key.pubkey(),
             service,
-            token_mint,
         };
         let pool = Keypair::new_from_array([0xb7; 32]);
         let mut create_pool = market.instruction(&pool);
@@ -280,7 +277,7 @@ impl TestContext {
                     params.token_mint = token_mint;
                     manteon::state::EventDefinition::TokenPriceThresholdCrossing { params }
                 }
-                None => manteon::state::EventDefinition::CompanyIpo { token_mint },
+                None => manteon::state::EventDefinition::ExternalEvent,
             },
             agreement_hash: [0xa1; 32],
             expected_config_hash: market.config_terms_hash(),

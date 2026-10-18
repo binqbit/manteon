@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::Mint;
 use tekmerion_sdk::{cpi, program::program::Tekmerion};
 
 use crate::{
@@ -29,9 +28,6 @@ pub struct ActivatePool<'info> {
         has_one = pool
     )]
     pub event: Account<'info, Event>,
-
-    // Private asset.
-    pub token_mint: InterfaceAccount<'info, Mint>,
 
     // Audit policy and CPI authority.
     /// CHECK: strict authenticated Tekmerion Policy decoder in handler.
@@ -69,9 +65,8 @@ pub(crate) fn handle(ctx: Context<ActivatePool>) -> Result<()> {
         .map_err(ManteonError::from)?;
     admission::validate_day(pool, manteon_core::math::utc_day::utc_day(pool.horizon_at))?;
     require!(
-        ctx.accounts.event.definition.token_mint() == ctx.accounts.token_mint.key()
-            && ctx.accounts.event.result.is_none(),
-        ManteonError::InvalidEventMint
+        ctx.accounts.event.result.is_none(),
+        ManteonError::InvalidEventResult
     );
     require!(
         pool.audit_config == ctx.accounts.config.audit_config

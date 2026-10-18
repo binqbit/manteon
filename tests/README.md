@@ -45,11 +45,11 @@ including shared dates, varied principal and zero payouts. Fee tests verify
 that closing or changing a recipient account cannot bind a winner's claim to
 that address; a replacement can be created and paid atomically.
 
-IPO tests verify time validation and authenticated review outcomes. External
-company facts remain an evidence-review responsibility. Price tests cover both
+External event tests verify time validation and authenticated review outcomes.
+Occurrence facts remain an evidence-review responsibility. Price tests cover both
 crossing directions, supported USD conversions, stale or substituted sources,
 failed confirmations and expiry refunds.
 
 Controlled source data and local auditor signatures establish execution
-behavior. They do not prove live provider availability, factual IPO truth,
+behavior. They do not prove live provider availability, factual event truth,
 auditor independence, economic fair value or public-network deployment.

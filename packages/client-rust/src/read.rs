@@ -116,7 +116,7 @@ pub(crate) fn pool_liability(
         return Err(ReadError::InvalidAccounting);
     }
 
-    if event.definition.token_mint() == Pubkey::default() {
+    if event.definition.token_mint() == Some(Pubkey::default()) {
         return Err(ReadError::InvalidRelationship);
     }
     if let Some(result) = event.result {
@@ -223,7 +223,7 @@ fn validate_event_state(pool: &Pool, event: &Event) -> core::result::Result<(), 
                 _ => return Err(ReadError::InvalidAccounting),
             }
         }
-        EventDefinition::CompanyIpo { .. } => match (pool.state, event.result) {
+        EventDefinition::ExternalEvent => match (pool.state, event.result) {
             (PoolState::Draft | PoolState::Active, None)
                 if pool.current_case.is_none()
                     && pool.next_case_nonce == 0

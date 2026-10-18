@@ -5,7 +5,7 @@ Participants choose a UTC date and commit capital to a pool. Once the event is
 accepted, the protocol distributes the remaining capital according to each
 forecast's accuracy and stake size.
 
-Pools support company IPO dates and token price threshold crossings. IPO facts
+Pools support external event dates and token price threshold crossings. External event facts
 use the separate [Tekmerion review protocol](vendor/tekmerion/docs/concept.md).
 Price crossings use fixed, authenticated on-chain sources. Both paths share
 participation, custody, fees and payout accounting.
@@ -24,7 +24,7 @@ to the first stable **1.0.0** release.
 | [Concept](docs/concept.md)                 | What a funded date forecast means and how accuracy affects capital. |
 | [How it works](docs/how-it-works.md)       | Participation, event acceptance, settlement and lifecycle diagrams. |
 | [Protocol specification](docs/protocol.md) | Exact time boundaries, withdrawal rules and payout arithmetic.      |
-| [Event rules](docs/events.md)              | IPO evidence review, price confirmation and source safeguards.      |
+| [Event rules](docs/events.md)              | External event evidence review, price confirmation and source safeguards.      |
 | [Configuration](docs/configuration.md)     | Service and governance roles, fixed fees and reusable settings.     |
 | [Document commitments](docs/agreements.md) | How documents bind rules and results, and how to verify them.       |
 | [Build and checks](docs/build.md)          | Standalone build and test commands.                                 |

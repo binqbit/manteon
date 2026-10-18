@@ -53,7 +53,7 @@ fn external_result_is_typed_past_bounded_and_never_funds_invalid_facts() {
         },
     ] {
         let mut instruction = valid.clone();
-        instruction.data = manteon::instruction::ProposeCompanyIpo { data }.data();
+        instruction.data = manteon::instruction::ProposeExternalEvent { data }.data();
         context.reject(
             &[instruction],
             &[&alice],
@@ -66,7 +66,7 @@ fn external_result_is_typed_past_bounded_and_never_funds_invalid_facts() {
 }
 
 #[test]
-fn company_ipo_settles_the_audited_occurrence_time_and_binds_both_documents() {
+fn external_event_settles_the_audited_occurrence_time_and_binds_both_documents() {
     {
         let mut context = TestContext::new();
         context.activate();
@@ -85,11 +85,11 @@ fn company_ipo_settles_the_audited_occurrence_time_and_binds_both_documents() {
             extra: None,
             occurred_at: FORECAST * DAY,
         };
-        instruction.data = manteon::instruction::ProposeCompanyIpo { data }.data();
+        instruction.data = manteon::instruction::ProposeExternalEvent { data }.data();
 
         let metadata = context.send(&[instruction], &[&alice]);
         println!(
-            "Company IPO canonical result and Case CPI: {} CU",
+            "External event canonical result and Case CPI: {} CU",
             metadata.compute_units_consumed
         );
 

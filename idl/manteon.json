@@ -44,9 +44,6 @@
           "name": "event"
         },
         {
-          "name": "token_mint"
-        },
-        {
           "name": "policy",
           "writable": true
         },
@@ -566,8 +563,8 @@
       "args": []
     },
     {
-      "name": "propose_company_ipo",
-      "discriminator": [128, 128, 224, 104, 251, 97, 50, 40],
+      "name": "propose_external_event",
+      "discriminator": [170, 64, 219, 21, 224, 44, 67, 56],
       "accounts": [
         {
           "name": "author",
@@ -935,7 +932,7 @@
     },
     {
       "name": "Event",
-      "discriminator": [125, 192, 125, 158, 9, 115, 152, 233]
+      "discriminator": [93, 52, 253, 229, 28, 199, 196, 160]
     },
     {
       "name": "GlobalConfig",
@@ -1277,7 +1274,7 @@
           {
             "name": "result",
             "docs": [
-              "Latest IPO proposal or verified price result. IPO acceptance requires its Case."
+              "Latest external proposal or verified price result. External acceptance requires its Case."
             ],
             "type": {
               "option": {
@@ -1296,13 +1293,7 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "CompanyIpo",
-            "fields": [
-              {
-                "name": "token_mint",
-                "type": "pubkey"
-              }
-            ]
+            "name": "ExternalEvent"
           },
           {
             "name": "TokenPriceThresholdCrossing",
@@ -1323,7 +1314,7 @@
     {
       "name": "EventResult",
       "docs": [
-        "Occurrence facts: proposed for IPO review or verified directly from price sources."
+        "Occurrence facts: proposed for external review or verified directly from price sources."
       ],
       "type": {
         "kind": "struct",

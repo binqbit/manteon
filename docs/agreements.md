@@ -1,6 +1,6 @@
 # Document commitments
 
-A pool commits to the exact bytes of its immutable agreement. IPO reviews also
+A pool commits to the exact bytes of its immutable agreement. External event reviews also
 commit to a canonical result generated from the proposed occurrence facts.
 The protocol records those commitments; an application stores and presents the
 readable documents.
@@ -31,9 +31,9 @@ pools; the pool identities still distinguish their capital and review attempts.
 
 ## Canonical result
 
-Manteon renders an IPO result from typed occurrence facts instead of accepting
-an arbitrary caller-supplied result hash. The result identifies the event,
-token mint and occurrence time, then binds them to the Manteon program, pool
+Manteon renders an external event result from typed occurrence facts instead of accepting
+an arbitrary caller-supplied result hash. The result identifies the event type and
+occurrence time, then binds them to the Manteon program, pool
 and agreement commitment. It is hashed before the Tekmerion review opens.
 
 The version 1 representation uses UTF-8 Markdown, LF line endings and a final
@@ -42,7 +42,7 @@ and UTC times use the four-digit calendar format from 1970 through 9999.
 Integrations should use the shared result formatter to reproduce the exact
 bytes; equivalent wording or formatting produces a different commitment.
 
-Applying IPO acceptance authenticates the current Case's policy, pool,
+Applying external event acceptance authenticates the current Case's policy, pool,
 review-attempt sequence, agreement commitment and derived result commitment.
 Event stores the latest candidate, so an earlier attempt's document must be
 checked against its own historical Case.
@@ -58,13 +58,13 @@ flowchart LR
     Facts["Validated event facts and pool identity"] --> Canonical["Canonical result bytes"]
     AgreementHash --> Canonical
     Canonical --> ResultHash["Derived result commitment"]
-    AgreementHash --> IPO["IPO Case binds both commitments"]
-    ResultHash --> IPO
+    AgreementHash --> Review["External event Case binds both commitments"]
+    ResultHash --> Review
 ```
 
 ## Independent verification
 
-1. Read authentic Pool/Event records from the intended network. For an IPO,
+1. Read authentic Pool/Event records from the intended network. For an external event,
    authenticate the relevant Tekmerion Case and its relationship to the pool.
 2. Obtain the original document and hash its exact bytes. Trimming whitespace,
    changing newlines, normalizing Unicode or substituting a rendered PDF changes

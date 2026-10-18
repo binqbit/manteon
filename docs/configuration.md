@@ -18,7 +18,7 @@ There are no default role addresses or default platform share.
 | Pending admin  | Accept the nomination to become admin.                            |
 | Fee authority  | Withdraw collected platform fees.                                 |
 | Config creator | Update unused reusable settings; abandon unused Drafts.           |
-| Config service | Create and activate pools; use the defined IPO service windows.   |
+| Config service | Create and activate pools; use the defined external event service windows.   |
 | Stake owner    | Sign their own deposits, eligible withdrawals, exits and claims.  |
 
 Admin transfer requires nomination by the current admin and acceptance by the
@@ -75,7 +75,7 @@ entitlements. Completion preserves historical accounts, prevents reactivation
 and depends on entitlements rather than an empty token vault. Dust and donations
 do not keep the reservation locked.
 
-Shared Config settings require a nonzero review-policy identity. Only IPO
+Shared Config settings require a nonzero review-policy identity. Only external event
 activation authenticates and retains that Tekmerion policy; price pools use
 their fixed source rules without opening a review. Releasing a Manteon Config
 reservation does not release Tekmerion's policy. The pinned review protocol

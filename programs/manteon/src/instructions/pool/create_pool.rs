@@ -90,18 +90,13 @@ pub(crate) fn handle(
             <= algorithm.max_error_days(),
         ManteonError::UnsupportedDate
     );
-    require_keys_neq!(
-        event.token_mint(),
-        Pubkey::default(),
-        ManteonError::InvalidEventMint
-    );
     require!(agreement_hash != [0; 32], ManteonError::InvalidAgreement);
     if let EventDefinition::TokenPriceThresholdCrossing { params } = event {
         params.validate()?;
     }
 
-    // Activation validates the tracked Mint and the definition's fixed sources.
-    // IPO identity and occurrence facts are evaluated against the agreement.
+    // External identity and occurrence facts are evaluated against the agreement.
+    // Price activation validates its tracked Mint and fixed on-chain sources.
     ctx.accounts.pool.set_inner(Pool {
         config: ctx.accounts.config.key(),
         event_id: ctx.accounts.event.key(),

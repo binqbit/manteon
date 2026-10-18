@@ -79,6 +79,6 @@ Manteon and pinned Tekmerion SBF programs with controlled clocks and funds,
 including custody, review integration, lifecycle transitions, failed-transaction
 rollback and duplicate-claim protection.
 
-These tests establish local contract behavior. Controlled IPO evidence and
-price-source fixtures do not establish factual IPO truth, live price-source
+These tests establish local contract behavior. Controlled external event evidence and
+price-source fixtures do not establish factual external event truth, live price-source
 availability, auditor independence or deployed program identity.

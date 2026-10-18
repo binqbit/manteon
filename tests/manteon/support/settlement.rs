@@ -42,7 +42,7 @@ impl CaseFixture {
         let vault = identity.vault();
         let ix = Instruction {
             program_id: address(manteon::ID),
-            accounts: manteon::accounts::ProposeCompanyIpo {
+            accounts: manteon::accounts::ProposeExternalEvent {
                 author,
                 payer: pubkey(context.payer.pubkey()),
                 config: pubkey(context.config_address),
@@ -60,7 +60,7 @@ impl CaseFixture {
                 system_program: anchor_lang::system_program::ID,
             }
             .to_account_metas(None),
-            data: manteon::instruction::ProposeCompanyIpo {
+            data: manteon::instruction::ProposeExternalEvent {
                 data: manteon::state::EventResult {
                     extra: None,
                     occurred_at: result.occurred_at,

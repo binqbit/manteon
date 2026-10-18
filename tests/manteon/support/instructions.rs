@@ -22,7 +22,6 @@ impl TestContext {
                 config: pubkey(self.config_address),
                 pool: pubkey(self.pool.pubkey()),
                 event: PoolContext::event(&self.pool),
-                token_mint: self.token_mint,
                 policy: self.policy,
                 client_authority: self.client_authority,
                 tekmerion_program: TEKMERION,

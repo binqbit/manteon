@@ -2,20 +2,18 @@ use super::*;
 
 #[test]
 fn common_time_requires_only_the_facts_needed_by_the_definition() {
-    let ipo = EventDefinition::CompanyIpo {
-        token_mint: Pubkey::new_from_array([1; 32]),
-    };
+    let external = EventDefinition::ExternalEvent;
     let result = EventResult {
         occurred_at: 100,
         extra: None,
     };
-    assert!(result.validate(&ipo, 100).is_ok());
-    assert!(result.validate(&ipo, 99).is_err());
+    assert!(result.validate(&external, 100).is_ok());
+    assert!(result.validate(&external, 99).is_err());
     assert!(EventResult {
         occurred_at: -1,
         ..result
     }
-    .validate(&ipo, 100)
+    .validate(&external, 100)
     .is_err());
 
     for direction in [CrossingDirection::Up, CrossingDirection::Down] {
@@ -23,7 +21,7 @@ fn common_time_requires_only_the_facts_needed_by_the_definition() {
             params: PriceThreshold {
                 protocol: PriceProtocol::RaydiumCpmm,
                 pool_id: Pubkey::new_from_array([2; 32]),
-                token_mint: ipo.token_mint(),
+                token_mint: Pubkey::new_from_array([1; 32]),
                 direction,
                 target_price_usd_e9: 1_000_000_000,
                 usd_quote_source: UsdQuoteSource::Usdc,
@@ -41,7 +39,7 @@ fn common_time_requires_only_the_facts_needed_by_the_definition() {
             ..result
         };
         assert!(confirmed.validate(&price, 100).is_ok());
-        assert!(confirmed.validate(&ipo, 100).is_err());
+        assert!(confirmed.validate(&external, 100).is_err());
         assert!(confirmed.validate(&price, 99).is_err());
         let straddles = EventResult {
             extra: Some(EventResultExtra::PriceVerification {

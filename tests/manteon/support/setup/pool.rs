@@ -22,7 +22,6 @@ pub struct PoolContext {
     pub config: ConfigContext,
     pub config_address: Address,
     pub service: Keypair,
-    pub token_mint: Pubkey,
 }
 
 impl Default for PoolContext {
@@ -55,9 +54,6 @@ impl PoolContext {
             config,
             config_address: config_keypair.pubkey(),
             service,
-            // The intended private identity is a reference, not collateral or
-            // authenticated origin evidence. Its account is deliberately absent.
-            token_mint: Pubkey::new_from_array([0x83; 32]),
         }
     }
 
@@ -94,9 +90,7 @@ impl PoolContext {
             }
             .to_account_metas(None),
             data: manteon::instruction::CreatePool {
-                event: manteon::state::EventDefinition::CompanyIpo {
-                    token_mint: self.token_mint,
-                },
+                event: manteon::state::EventDefinition::ExternalEvent,
                 agreement_hash: [0xa1; 32],
                 expected_config_hash: self.config_terms_hash(),
                 algorithm: manteon::state::PoolAlgorithm::H30,

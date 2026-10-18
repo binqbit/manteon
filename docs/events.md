@@ -1,25 +1,28 @@
 # Event rules
 
 Each pool selects an immutable event definition and acceptance mechanism.
-Company IPOs use evidence review through Tekmerion. Token price thresholds use
-fixed on-chain sources. Both ultimately supply the UTC date used in
-[settlement](protocol.md#accuracy-and-payout-arithmetic).
+External events use evidence review through Tekmerion. Token price thresholds
+use fixed on-chain sources. Both supply the UTC date used in [settlement](protocol.md#accuracy-and-payout-arithmetic).
 
-## Company IPO
+## External event
 
-The IPO rule identifies the token mint representing the company. The agreement
-must define the issuer and evidence sources. The question is when the company
-**actually completed its public IPO**. Announcements, estimates, token mint
-creation and a token's first exchange trade do not establish that fact. If the
-evidence establishes a date without a time, the agreed convention is midnight
-UTC on that date. Evidence that cannot establish completion and its date calls
-for an Unknown review answer.
+`ExternalEvent` registers an external fact through the pool's Event account.
+The pool commits to its Agreement hash. The Agreement defines the subject,
+occurrence criteria, sources and rule for selecting the occurrence timestamp.
+Any relevant token, company or instrument identity belongs in that document;
+the contract does not require a token mint for an external event.
+
+An IPO and a bridge opening use the same event type and proposal instruction.
+For example, an IPO Agreement can require a completed public offering and reject
+announcements; a bridge Agreement can require the first public opening. These
+are authored conditions, not separate contract branches. Insufficient evidence
+can produce an Unknown review answer.
 
 A proposer supplies occurrence facts and funds a fresh Tekmerion review with a
 separate USDC author bond. Manteon checks the event identity, a nonfuture time,
 the supported calendar range and, for a competitive result, the allowed date
 domain. It generates a canonical result commitment bound to the pool and its
-agreement. It does not fetch websites or establish the external company facts.
+agreement. It does not fetch websites or establish the external facts.
 
 ### Review and acceptance
 
@@ -52,7 +55,7 @@ Three clocks have different meanings:
 
 | Time                                    | Purpose                                                                 |
 | --------------------------------------- | ----------------------------------------------------------------------- |
-| Reported occurrence time                | The IPO fact under review and the UTC day used to score forecasts.      |
+| Reported occurrence time                | The external fact under review and the UTC day used to score forecasts.      |
 | First successfully funded proposal time | Anchors public proposal access across retries.                          |
 | Review finalization time                | Anchors public access to applying acceptance and completing settlement. |
 
@@ -69,7 +72,7 @@ of H30, H15 or H7. Owner claims require no service signature.
 An accepted occurrence before entry close enables principal refunds. An
 occurrence at or after entry close freezes the remaining capital for
 competitive settlement. The horizon enables owner exits while the pool stays
-Active, including during pending review; it does not impose an IPO occurrence
+Active, including during pending review; it does not impose an event occurrence
 or review deadline.
 
 ## Token price threshold crossing

@@ -9,14 +9,15 @@ mod tests;
 pub use price::{CrossingDirection, PriceProtocol, PriceThreshold, UsdQuoteSource};
 
 /// Immutable event rule and its occurrence facts.
-#[account]
+// Event v2 rejects the former IPO layout, including accounts padded to the same size.
+#[account(discriminator = [93, 52, 253, 229, 28, 199, 196, 160])]
 #[derive(InitSpace)]
 pub struct Event {
     // Reciprocal Pool identity and immutable subject.
     pub pool: Pubkey,
     pub definition: EventDefinition,
 
-    /// Latest IPO proposal or verified price result. IPO acceptance requires its Case.
+    /// Latest external proposal or verified price result. External acceptance requires its Case.
     pub result: Option<EventResult>,
 }
 
@@ -26,27 +27,30 @@ impl Event {
 
 #[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EventDefinition {
-    CompanyIpo { token_mint: Pubkey },
-    TokenPriceThresholdCrossing { params: PriceThreshold },
+    /// The subject and criteria are defined by the Pool's committed Agreement.
+    ExternalEvent,
+    TokenPriceThresholdCrossing {
+        params: PriceThreshold,
+    },
 }
 
 impl EventDefinition {
-    pub fn token_mint(&self) -> Pubkey {
+    pub fn token_mint(&self) -> Option<Pubkey> {
         match *self {
-            Self::CompanyIpo { token_mint } => token_mint,
-            Self::TokenPriceThresholdCrossing { params } => params.token_mint,
+            Self::ExternalEvent => None,
+            Self::TokenPriceThresholdCrossing { params } => Some(params.token_mint),
         }
     }
 
     pub fn kind(&self) -> &'static str {
         match self {
-            Self::CompanyIpo { .. } => "company_ipo",
+            Self::ExternalEvent => "external_event",
             Self::TokenPriceThresholdCrossing { .. } => "token_price_threshold_crossing",
         }
     }
 }
 
-/// Occurrence facts: proposed for IPO review or verified directly from price sources.
+/// Occurrence facts: proposed for external review or verified directly from price sources.
 #[derive(AnchorSerialize, AnchorDeserialize, InitSpace, Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EventResult {
     pub occurred_at: i64,
@@ -80,15 +84,10 @@ impl EventResult {
     }
 
     /// Verify the common time and event-specific facts. Instructions authenticate
-    /// either the IPO audit or the fixed on-chain price sources.
+    /// either the external audit or the fixed on-chain price sources.
     pub fn validate(&self, subject: &EventDefinition, now: i64) -> Result<()> {
         match (subject, self.extra) {
-            (EventDefinition::CompanyIpo { token_mint }, None) => {
-                require!(
-                    *token_mint != Pubkey::default(),
-                    ManteonError::InvalidEventMint
-                );
-            }
+            (EventDefinition::ExternalEvent, None) => {}
             (
                 EventDefinition::TokenPriceThresholdCrossing { params },
                 Some(EventResultExtra::PriceVerification {

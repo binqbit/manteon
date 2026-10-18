@@ -1,4 +1,4 @@
-use anchor_lang::{AccountDeserialize, InstructionData, error::ErrorCode, prelude::Pubkey};
+use anchor_lang::{AccountDeserialize, InstructionData, error::ErrorCode};
 use manteon::{
     error::ManteonError,
     state::{Event, EventDefinition, Pool, PoolState},
@@ -81,12 +81,7 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
         let event = Event::try_deserialize(&mut event_account.data.as_slice()).unwrap();
         assert_eq!(event.pool, pubkey(keypair.pubkey()));
         assert_eq!(event.result, None);
-        assert_eq!(
-            event.definition,
-            EventDefinition::CompanyIpo {
-                token_mint: context.token_mint,
-            }
-        );
+        assert_eq!(event.definition, EventDefinition::ExternalEvent);
         let current_config = context
             .config
             .svm
@@ -119,9 +114,7 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
 
     let mut replay = context.instruction(&first);
     replay.data = manteon::instruction::CreatePool {
-        event: manteon::state::EventDefinition::CompanyIpo {
-            token_mint: Pubkey::new_from_array([0x86; 32]),
-        },
+        event: manteon::state::EventDefinition::ExternalEvent,
         agreement_hash: [0xa1; 32],
         expected_config_hash: context.config_terms_hash(),
         algorithm: manteon::state::PoolAlgorithm::H30,
@@ -146,9 +139,7 @@ fn anchor_009_pool_schedule_uses_execution_clock_and_committed_ordering() {
     ] {
         let mut instruction = context.instruction(&pool);
         instruction.data = manteon::instruction::CreatePool {
-            event: manteon::state::EventDefinition::CompanyIpo {
-                token_mint: context.token_mint,
-            },
+            event: manteon::state::EventDefinition::ExternalEvent,
             agreement_hash: [0xa1; 32],
             expected_config_hash: context.config_terms_hash(),
             algorithm: manteon::state::PoolAlgorithm::H30,
@@ -168,9 +159,7 @@ fn anchor_009_pool_schedule_uses_execution_clock_and_committed_ordering() {
     // been selected. The equal LOCK/horizon boundary remains valid at i64::MAX.
     let mut instruction = context.instruction(&pool);
     instruction.data = manteon::instruction::CreatePool {
-        event: manteon::state::EventDefinition::CompanyIpo {
-            token_mint: context.token_mint,
-        },
+        event: manteon::state::EventDefinition::ExternalEvent,
         agreement_hash: [0xa1; 32],
         expected_config_hash: context.config_terms_hash(),
         algorithm: manteon::state::PoolAlgorithm::H30,
@@ -209,12 +198,10 @@ fn anchor_010_pool_creation_rejects_substitution_and_rolls_back_composed_failure
     wrong_config.accounts[2].pubkey = context.config.authority.pubkey();
     let mut wrong_event = context.instruction(&pool);
     wrong_event.accounts[4].pubkey = address(PoolContext::event(&another_pool));
-    let mut zero_mint = context.instruction(&pool);
-    zero_mint.data = manteon::instruction::CreatePool {
-        event: manteon::state::EventDefinition::CompanyIpo {
-            token_mint: Pubkey::default(),
-        },
-        agreement_hash: [0xa1; 32],
+    let mut zero_agreement = context.instruction(&pool);
+    zero_agreement.data = manteon::instruction::CreatePool {
+        event: manteon::state::EventDefinition::ExternalEvent,
+        agreement_hash: [0; 32],
         expected_config_hash: context.config_terms_hash(),
         algorithm: manteon::state::PoolAlgorithm::H30,
         opens_at: NOW + 10,
@@ -228,7 +215,7 @@ fn anchor_010_pool_creation_rejects_substitution_and_rolls_back_composed_failure
             rejected(ErrorCode::AccountOwnedByWrongProgram),
         ),
         (wrong_event, rejected(ErrorCode::ConstraintSeeds)),
-        (zero_mint, rejected(ManteonError::InvalidEventMint)),
+        (zero_agreement, rejected(ManteonError::InvalidAgreement)),
     ] {
         context.assert_rejected(&[instruction], &pool, None, expected);
     }
@@ -270,9 +257,7 @@ fn pool_rejects_empty_agreement_before_creating_market_accounts() {
     let pool = Keypair::new_from_array([0x98; 32]);
     let mut instruction = context.instruction(&pool);
     instruction.data = manteon::instruction::CreatePool {
-        event: EventDefinition::CompanyIpo {
-            token_mint: context.token_mint,
-        },
+        event: EventDefinition::ExternalEvent,
         agreement_hash: [0; 32],
         expected_config_hash: context.config_terms_hash(),
         algorithm: manteon::state::PoolAlgorithm::H30,
@@ -298,9 +283,7 @@ fn pool_creation_commits_every_algorithm_and_enforces_its_horizon_domain() {
         let pool = Keypair::new_from_array([0x91; 32]);
         let data = |horizon_at| {
             manteon::instruction::CreatePool {
-                event: manteon::state::EventDefinition::CompanyIpo {
-                    token_mint: context.token_mint,
-                },
+                event: manteon::state::EventDefinition::ExternalEvent,
                 algorithm,
                 agreement_hash: [0xa1; 32],
                 expected_config_hash: context.config_terms_hash(),

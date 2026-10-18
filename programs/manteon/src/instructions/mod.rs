@@ -6,7 +6,7 @@ pub(crate) mod initialize_global_config;
 pub(crate) mod participation;
 pub(crate) mod pool;
 pub(crate) mod price_threshold;
-pub(crate) mod propose_company_ipo;
+pub(crate) mod propose_external_event;
 pub(crate) mod settlement;
 
 pub(crate) mod update_config;

@@ -17,9 +17,7 @@ impl EventResult {
         self.validate(subject, result::MAX_TIMESTAMP)?;
 
         let facts = match subject {
-            EventDefinition::CompanyIpo { token_mint } => {
-                format!("- Token mint: {token_mint}\n")
-            }
+            EventDefinition::ExternalEvent => String::new(),
             EventDefinition::TokenPriceThresholdCrossing { params } => {
                 let bounds = self
                     .price_bounds()
@@ -64,11 +62,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ipo_commitment_binds_token_time_pool_and_agreement() {
+    fn external_commitment_binds_time_pool_and_agreement() {
         let pool = Pubkey::new_from_array([1; 32]);
-        let subject = EventDefinition::CompanyIpo {
-            token_mint: Pubkey::new_from_array([2; 32]),
-        };
+        let subject = EventDefinition::ExternalEvent;
         let result = EventResult {
             extra: None,
             occurred_at: 1_800_000_000,
@@ -92,18 +88,6 @@ mod tests {
             }
             .document_hash(&subject, pool, &[4; 32])
             .unwrap()
-        );
-        assert_ne!(
-            hash,
-            result
-                .document_hash(
-                    &EventDefinition::CompanyIpo {
-                        token_mint: Pubkey::new_from_array([3; 32])
-                    },
-                    pool,
-                    &[4; 32]
-                )
-                .unwrap()
         );
         let text = result.document(&subject, pool, &[4; 32]).unwrap();
         assert!(text.contains("- Occurred at: 2027-01-15T08:00:00Z\n"));

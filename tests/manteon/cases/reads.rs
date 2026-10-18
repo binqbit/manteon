@@ -130,12 +130,7 @@ fn anchor_013_reader_exposes_created_pool_and_unallocated_donations() {
     );
     assert_eq!(view.pool.state, PoolState::Draft);
     assert_eq!(view.event.pool, pubkey(pool.pubkey()));
-    assert_eq!(
-        view.event.definition,
-        EventDefinition::CompanyIpo {
-            token_mint: context.token_mint,
-        }
-    );
+    assert_eq!(view.event.definition, EventDefinition::ExternalEvent);
     assert_eq!((view.vault_balance, view.unallocated_balance), (0, 0));
 
     let donation = spl_token::instruction::transfer_checked(
@@ -420,12 +415,10 @@ fn price_monitor_reader_authenticates_its_account_and_lifecycle_separately() {
             Some(ReadError::InvalidAccounting)
         );
     }
-    let mut ipo = context.event_state();
-    ipo.definition = EventDefinition::CompanyIpo {
-        token_mint: context.token_mint,
-    };
+    let mut external = context.event_state();
+    external.definition = EventDefinition::ExternalEvent;
     assert_eq!(
-        read_monitor_account(&pool_key, &pool, &ipo, &mut base.clone()).err(),
+        read_monitor_account(&pool_key, &pool, &external, &mut base.clone()).err(),
         Some(ReadError::InvalidRelationship)
     );
 }

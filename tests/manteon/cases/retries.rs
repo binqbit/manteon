@@ -226,12 +226,7 @@ fn anchor_034_funded_timeout_allows_one_bound_paid_retry_without_reusing_the_old
     let event = Event::try_deserialize(&mut event_account.data.as_slice()).unwrap();
     assert_eq!(event.pool, pubkey(context.pool.pubkey()));
     assert_eq!(event.result.unwrap().occurred_at(), result.occurred_at);
-    assert_eq!(
-        event.definition,
-        EventDefinition::CompanyIpo {
-            token_mint: context.token_mint,
-        }
-    );
+    assert_eq!(event.definition, EventDefinition::ExternalEvent);
     assert_eq!(
         context.token_balance(context.audit_source),
         OWNER_BALANCE - 200

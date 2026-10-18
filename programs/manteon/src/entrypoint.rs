@@ -59,7 +59,7 @@ fn validate(data: &[u8]) -> Result<()> {
     instruction!(Stake);
     instruction!(Unstake);
     instruction!(Exit);
-    instruction!(ProposeCompanyIpo);
+    instruction!(ProposeExternalEvent);
     instruction!(BeginSettlement);
     instruction!(ProcessPositions);
     instruction!(FinalizeSettlement);
