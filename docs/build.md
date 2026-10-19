@@ -65,6 +65,14 @@ network deployment or execute public-network transfers.
 
 The explicit devnet output directory keeps the mainnet binaries separate.
 
+Disposable local validators may opt into `--features localnet`, using a separate
+output directory. This build accepts a one-minute price averaging window for
+local demonstrations; default and devnet builds retain the five-minute minimum.
+Use the matching `manteon-client/localnet` feature when reading those local
+accounts. The account layout and instruction interface are unchanged. Never
+deploy the local build to a public network. Existing pools retain the window
+committed in their agreements.
+
 Generated files are ignored under `target/`. Deployable program outputs are
 `target/deploy/manteon.so` and `target/deploy/tekmerion.so`; the generated Manteon
 interface is `target/idl/manteon.json` with TypeScript types at

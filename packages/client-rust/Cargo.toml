@@ -11,6 +11,7 @@ workspace = "../../programs/manteon"
 default = ["mainnet"]
 mainnet = ["manteon/mainnet"]
 devnet = ["manteon/devnet"]
+localnet = ["manteon/localnet"]
 
 [dependencies]
 anchor-lang = { version = "=1.2.1", default-features = false, features = ["solana-v3"] }

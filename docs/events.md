@@ -156,6 +156,10 @@ that straddles the target cannot confirm a crossing.
 | Pyth update age                | Pool-selected limit of 1–120 seconds.                                                                      |
 | Pyth confidence-to-price ratio | Pool-selected limit of 1–100 basis points.                                                                 |
 
+These public-build bounds remain unchanged. An explicitly selected `localnet`
+build permits a 60-second minimum for disposable demonstrations; the selected
+window is still committed in the agreement. See [build profiles](build.md).
+
 These are validation bounds, not defaults. Source reads also authenticate
 account owners, complete supported layouts, pool and mint identities,
 observation identity, vaults and trading availability. Protocol, fund and

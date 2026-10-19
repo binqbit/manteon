@@ -122,11 +122,12 @@ impl PriceThreshold {
     }
 
     pub fn validate(&self) -> Result<()> {
+        let minimum_window = if cfg!(feature = "localnet") { 60 } else { 300 };
         require!(
             self.pool_id != Pubkey::default()
                 && self.token_mint != Pubkey::default()
                 && self.target_price_usd_e9 > 0
-                && (300..=3_600).contains(&self.twap_window_seconds)
+                && (minimum_window..=3_600).contains(&self.twap_window_seconds)
                 && self.max_observation_gap_seconds >= self.twap_window_seconds * 2
                 && self.max_observation_gap_seconds <= 86_400
                 && self.minimum_quote_liquidity_usd_e9 >= 10_000_000_000_000,

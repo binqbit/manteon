@@ -20,6 +20,8 @@ name = "manteon"
 default = ["strict-entrypoint", "mainnet"]
 mainnet = ["tekmerion-sdk/mainnet"]
 devnet = ["tekmerion-sdk/devnet"]
+# Disposable local validator only; public builds keep the five-minute minimum.
+localnet = []
 # Validate complete instruction payloads, then invoke the generated Anchor entry.
 strict-entrypoint = ["no-entrypoint"]
 no-entrypoint = []

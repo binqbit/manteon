@@ -1,6 +1,26 @@
 use super::*;
 
 #[test]
+fn minute_price_windows_are_exclusive_to_the_local_build() {
+    let mut rule = PriceThreshold {
+        protocol: PriceProtocol::RaydiumCpmm,
+        pool_id: Pubkey::new_from_array([2; 32]),
+        token_mint: Pubkey::new_from_array([1; 32]),
+        direction: CrossingDirection::Up,
+        target_price_usd_e9: 1_000_000_000,
+        usd_quote_source: UsdQuoteSource::Usdc,
+        twap_window_seconds: 60,
+        max_observation_gap_seconds: 14_400,
+        minimum_quote_liquidity_usd_e9: 100_000_000_000_000,
+    };
+    assert_eq!(rule.validate().is_ok(), cfg!(feature = "localnet"));
+    rule.twap_window_seconds = 59;
+    assert!(rule.validate().is_err());
+    rule.twap_window_seconds = 300;
+    assert!(rule.validate().is_ok());
+}
+
+#[test]
 fn common_time_requires_only_the_facts_needed_by_the_definition() {
     let external = EventDefinition::ExternalEvent;
     let result = EventResult {
