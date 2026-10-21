@@ -148,8 +148,10 @@ fn final_challenge_funding_and_optimistic_closure_cannot_authorize_conflicting_r
                 terminal
             );
         }
-        assert_eq!(context.pool_state().current_case, Some(case.key));
-        assert_eq!(context.pool_state().next_case_nonce, 1);
+        assert_eq!(
+            context.pool_state().accepted_case,
+            if fully_funded { None } else { Some(case.key) }
+        );
         assert_eq!(context.policy_uses(), 2);
     }
 }
@@ -214,10 +216,8 @@ fn anchor_034_funded_timeout_allows_one_bound_paid_retry_without_reusing_the_old
     assert_eq!((state.nonce, state.previous_case), (1, Some(first.key)));
     assert_eq!(state.result_hash, first_state.result_hash);
     let pool = context.pool_state();
-    assert_eq!(
-        (pool.current_case, pool.next_case_nonce),
-        (Some(second.key), 2)
-    );
+    assert_eq!(pool.accepted_case, None);
+    assert_eq!(state.nonce, 1);
     assert_eq!((pool.principal, context.policy_uses()), (100, 3));
     let event_account = context
         .svm
@@ -225,7 +225,7 @@ fn anchor_034_funded_timeout_allows_one_bound_paid_retry_without_reusing_the_old
         .unwrap();
     let event = Event::try_deserialize(&mut event_account.data.as_slice()).unwrap();
     assert_eq!(event.pool, pubkey(context.pool.pubkey()));
-    assert_eq!(event.result.unwrap().occurred_at(), result.occurred_at);
+    assert!(event.result.is_none());
     assert_eq!(event.definition, EventDefinition::ExternalEvent);
     assert_eq!(
         context.token_balance(context.audit_source),
@@ -256,13 +256,7 @@ fn anchor_034_funded_timeout_allows_one_bound_paid_retry_without_reusing_the_old
         .accounts
         .push(AccountMeta::new_readonly(address(second.key), false));
     context.reject(&[replace_yes], &[&alice], invalid_audit());
-    assert_eq!(
-        (
-            context.pool_state().current_case,
-            context.pool_state().next_case_nonce
-        ),
-        (Some(second.key), 2)
-    );
+    assert_eq!(context.pool_state().accepted_case, None);
 }
 
 #[test]
@@ -335,14 +329,12 @@ fn case_creation_failures_roll_back_audit_custody_and_market_attempt() {
     ] {
         assert!(context.svm.get_account(&address(created)).is_none());
     }
-    assert_eq!(context.pool_state().current_case, None);
-    assert_eq!(context.pool_state().next_case_nonce, 0);
+    assert_eq!(context.pool_state().accepted_case, None);
     assert_eq!(context.policy_uses(), 1);
     assert_eq!(context.token_balance(context.audit_source), 100);
 
     context.send(&[start], &[&alice]);
-    assert_eq!(context.pool_state().current_case, Some(case.key));
-    assert_eq!(context.pool_state().next_case_nonce, 1);
+    assert_eq!(context.pool_state().accepted_case, None);
     assert_eq!(context.policy_uses(), 2);
     assert_eq!(context.token_balance(context.audit_source), 0);
     assert_eq!(context.token_balance(address(case.vault)), 100);

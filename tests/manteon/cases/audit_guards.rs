@@ -90,6 +90,7 @@ fn candidate_submission_authenticates_author_asset_client_and_auditor_before_cre
     context.reject(&[unsigned], &[], custom(ErrorCode::AccountNotSigner));
     let mut mismatched_candidate = valid.clone();
     mismatched_candidate.data = manteon::instruction::ProposeExternalEvent {
+        nonce: 0,
         data: manteon::state::EventResult {
             extra: Some(manteon::state::EventResultExtra::PriceVerification {
                 lower_usd_e9: 2_000_000_000,
@@ -104,8 +105,7 @@ fn candidate_submission_authenticates_author_asset_client_and_auditor_before_cre
         &[&alice],
         custom(ManteonError::InvalidEventResult),
     );
-    assert_eq!(context.pool_state().current_case, None);
-    assert_eq!(context.pool_state().next_case_nonce, 0);
+    assert_eq!(context.pool_state().accepted_case, None);
     assert_eq!(context.policy_uses(), 1);
     assert!(context.svm.get_account(&address(case.key)).is_none());
     context.send(&[valid], &[&alice]);
@@ -260,7 +260,7 @@ fn shared_result_never_authorizes_a_foreign_pool_case_or_event_and_acceptance_is
 }
 
 #[test]
-fn competing_candidate_authors_serialize_one_case_and_one_bond_in_either_order() {
+fn independent_authors_open_parallel_cases_with_isolated_bonds_and_predecessors() {
     for alice_first in [true, false] {
         let mut context = TestContext::new();
         let alice = context.alice.insecure_clone();
@@ -274,11 +274,9 @@ fn competing_candidate_authors_serialize_one_case_and_one_bond_in_either_order()
             100,
         );
         context.activate();
-        let mut first_result = ResultFixture::new(&context);
-        let mut second_result = ResultFixture::new(&context);
         context.set_time(FORECAST * DAY);
-        first_result.record_time(&context);
-        second_result.record_time(&context);
+        let first_result = ResultFixture::new(&context);
+        let mut second_result = ResultFixture::new(&context);
         second_result.occurred_at -= 1;
         let (alice_case, alice_start) = CaseFixture::instruction(&context, &first_result);
         let (bob_case, bob_start) = CaseFixture::instruction_for(
@@ -287,56 +285,44 @@ fn competing_candidate_authors_serialize_one_case_and_one_bond_in_either_order()
             pubkey(bob.pubkey()),
             pubkey(bob_source),
         );
-        assert_eq!(alice_case.key, bob_case.key);
-        let (winner, winner_start, loser, loser_start, winning_result) = if alice_first {
-            (&alice, alice_start, &bob, bob_start, &first_result)
+        assert_ne!(alice_case.key, bob_case.key);
+        assert_eq!((alice_case.identity.nonce, bob_case.identity.nonce), (0, 0));
+        if alice_first {
+            context.send(&[alice_start], &[&alice]);
+            context.send(&[bob_start], &[&bob]);
         } else {
-            (&bob, bob_start, &alice, alice_start, &second_result)
-        };
-        context.send(&[winner_start], &[winner]);
-        let accepted_attempt = context.svm.get_account(&address(alice_case.key)).unwrap();
-        context.reject(
-            &[loser_start],
-            &[loser],
-            custom(ManteonError::InvalidAuditAccount),
-        );
-        let (next_case, mut concurrent_retry) = CaseFixture::instruction(&context, winning_result);
-        concurrent_retry
+            context.send(&[bob_start], &[&bob]);
+            context.send(&[alice_start], &[&alice]);
+        }
+        let (next, mut retry) = CaseFixture::instruction(&context, &first_result);
+        retry
             .accounts
             .push(AccountMeta::new_readonly(address(alice_case.key), false));
         context.reject(
-            &[concurrent_retry],
+            &[retry.clone()],
             &[&alice],
             custom(ManteonError::InvalidAuditAccount),
         );
-        assert!(context.svm.get_account(&address(next_case.key)).is_none());
-        assert!(
-            context
-                .svm
-                .get_account(&address(
-                    alice_case.identity.receipt(&pubkey(loser.pubkey()))
-                ))
-                .is_none()
+        retry.accounts.last_mut().unwrap().pubkey = address(bob_case.key);
+        context.reject(
+            &[retry],
+            &[&alice],
+            custom(ManteonError::InvalidAuditAccount),
         );
-        assert_eq!(
-            context.svm.get_account(&address(alice_case.key)).unwrap(),
-            accepted_attempt
-        );
+        assert!(context.svm.get_account(&address(next.key)).is_none());
         assert_eq!(
             case_state(&context, &alice_case).author,
-            pubkey(winner.pubkey())
+            pubkey(alice.pubkey())
         );
-        assert_eq!(context.pool_state().current_case, Some(alice_case.key));
-        assert_eq!(context.pool_state().next_case_nonce, 1);
+        assert_eq!(case_state(&context, &bob_case).author, pubkey(bob.pubkey()));
+        assert_eq!(context.pool_state().accepted_case, None);
         assert_eq!(context.token_balance(address(alice_case.vault)), 100);
-        assert_eq!(context.policy_uses(), 2);
+        assert_eq!(context.token_balance(address(bob_case.vault)), 100);
+        assert_eq!(context.policy_uses(), 3);
         assert_eq!(
             context.token_balance(context.audit_source),
-            super::support::OWNER_BALANCE - if alice_first { 100 } else { 0 }
+            super::support::OWNER_BALANCE - 100
         );
-        assert_eq!(
-            context.token_balance(bob_source),
-            if alice_first { 100 } else { 0 }
-        );
+        assert_eq!(context.token_balance(bob_source), 0);
     }
 }

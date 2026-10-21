@@ -112,8 +112,7 @@ pub(crate) fn handle(
         lock_at,
         horizon_at,
         state: PoolState::Draft,
-        next_case_nonce: 0,
-        current_case: None,
+        accepted_case: None,
         principal: 0,
         active_dates: 0,
         processed_dates: 0,
@@ -121,6 +120,7 @@ pub(crate) fn handle(
         payout_remaining: 0,
         claimed_principal: 0,
         service_eligible_at: None,
+        public_proposals: false,
     });
 
     ctx.accounts.event.set_inner(Event {

@@ -42,10 +42,11 @@ and UTC times use the four-digit calendar format from 1970 through 9999.
 Integrations should use the shared result formatter to reproduce the exact
 bytes; equivalent wording or formatting produces a different commitment.
 
-Applying external event acceptance authenticates the current Case's policy, pool,
-review-attempt sequence, agreement commitment and derived result commitment.
-Event stores the latest candidate, so an earlier attempt's document must be
-checked against its own historical Case.
+Applying external event acceptance authenticates the selected Case's policy,
+pool, author-specific identity, agreement commitment and derived result
+commitment. Each proposal is checked against its own Case. Event stores only
+the occurrence facts accepted by the first successfully applied final Yes;
+pending or rejected proposals cannot overwrite them.
 
 A price result records its confirmed occurrence time and verified price bounds
 directly in Event. Its canonical document includes the complete fixed price

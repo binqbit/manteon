@@ -5,7 +5,7 @@ use manteon_core::math::utc_day::utc_day;
 use crate::{
     custody::token,
     error::ManteonError,
-    state::{Config, Event, Pool, PoolState},
+    state::{Config, Event, EventDefinition, EventResult, Pool, PoolState},
     validation::{admission, resolution},
 };
 
@@ -24,13 +24,14 @@ pub struct BeginSettlement<'info> {
     )]
     pub pool: Account<'info, Pool>,
     #[account(
+        mut,
         seeds = [Event::SEED, pool.key().as_ref()],
         bump,
         has_one = pool
     )]
     pub event: Account<'info, Event>,
-    /// CHECK: fixed owner, schema, PDA and current Case binding checked by adapter.
-    pub case: Option<UncheckedAccount<'info>>,
+    /// CHECK: fixed owner, schema, PDA and candidate binding checked by adapter.
+    pub case: UncheckedAccount<'info>,
     // Token custody.
     #[account(
         seeds = [Pool::VAULT_SEED, pool.key().as_ref()],
@@ -39,18 +40,25 @@ pub struct BeginSettlement<'info> {
     pub vault: Account<'info, TokenAccount>,
 }
 
-pub(crate) fn handle(ctx: Context<BeginSettlement>) -> Result<()> {
+pub(crate) fn handle(ctx: Context<BeginSettlement>, data: EventResult) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
     require!(
-        !pool.config_released && pool.state == PoolState::Active,
+        !pool.config_released && pool.state == PoolState::Active && pool.accepted_case.is_none(),
         ManteonError::InvalidPoolState
     );
-    resolution::authorize(
-        ctx.accounts.caller.key(),
-        &ctx.accounts.config,
+    require!(
+        matches!(
+            ctx.accounts.event.definition,
+            EventDefinition::ExternalEvent
+        ) && ctx.accounts.event.result.is_none(),
+        ManteonError::InvalidEventResult
+    );
+    resolution::accepted(
+        pool.key(),
         pool,
         &ctx.accounts.event,
-        ctx.accounts.case.as_ref().map(|account| account.as_ref()),
+        &ctx.accounts.case,
+        &data,
         Clock::get()?.unix_timestamp,
     )?;
 
@@ -69,12 +77,7 @@ pub(crate) fn handle(ctx: Context<BeginSettlement>) -> Result<()> {
         pool.processed_dates == 0 && pool.total_weight == 0 && pool.payout_remaining == 0,
         ManteonError::InvalidAccounting
     );
-    let occurred_at = ctx
-        .accounts
-        .event
-        .result
-        .ok_or(ManteonError::InvalidEventResult)?
-        .occurred_at();
+    let occurred_at = data.occurred_at();
     if occurred_at < pool.lock_at {
         pool.state = PoolState::Refunding;
     } else {
@@ -83,6 +86,8 @@ pub(crate) fn handle(ctx: Context<BeginSettlement>) -> Result<()> {
         pool.payout_remaining = pool.principal;
         pool.state = PoolState::Settling;
     }
+    pool.accepted_case = Some(ctx.accounts.case.key());
+    ctx.accounts.event.result = Some(data);
     pool.release_if_complete(&mut ctx.accounts.config)?;
     Ok(())
 }

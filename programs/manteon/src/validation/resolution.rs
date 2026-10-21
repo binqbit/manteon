@@ -4,7 +4,7 @@ use tekmerion_sdk::program::{CasePhase, CaseResult, CompletionMethod};
 use crate::{
     error::ManteonError,
     integration::tekmerion,
-    state::{Config, Event, EventDefinition, Pool, PoolState},
+    state::{Config, Event, EventDefinition, EventResult, Pool, PoolState},
     validation::admission,
 };
 
@@ -23,9 +23,9 @@ pub(crate) fn authorize(
         let occurred_at = result.occurred_at;
         result.validate(&event.definition, now)?;
         require!(
-            pool.current_case.is_none()
-                && pool.next_case_nonce == 0
+            pool.accepted_case.is_none()
                 && pool.service_eligible_at.is_none()
+                && !pool.public_proposals
                 && occurred_at <= pool.horizon_at
                 && ((occurred_at < pool.lock_at) == (pool.state == PoolState::Refunding))
                 && matches!(
@@ -36,26 +36,27 @@ pub(crate) fn authorize(
         );
         return Ok(());
     }
-    let eligible_at = accepted(
-        pool.key(),
-        pool,
-        event,
-        case.ok_or(ManteonError::InvalidAuditAccount)?,
-        now,
-    )?;
+    let account = case.ok_or(ManteonError::InvalidAuditAccount)?;
+    require!(
+        pool.accepted_case == Some(account.key()),
+        ManteonError::InvalidAuditAccount
+    );
+    let candidate = event.result.ok_or(ManteonError::InvalidEventResult)?;
+    let eligible_at = accepted(pool.key(), pool, event, account, &candidate, now)?;
     admission::service_access(caller, config.service_authority, eligible_at, now)
 }
 
 /// Authenticate final Yes and the original immutable timestamp together.
 /// The returned service anchor is derived from facts and cannot be reset by a caller.
-fn accepted(
+pub(crate) fn accepted(
     pool_key: Pubkey,
     pool: &Pool,
     event: &Event,
     case: &AccountInfo,
+    candidate: &EventResult,
     now: i64,
 ) -> Result<i64> {
-    let case = tekmerion::current_case(case, pool_key, pool, event)?;
+    let case = tekmerion::candidate_case(case, pool_key, pool, event, candidate)?;
     require!(
         case.phase() == CasePhase::Finalized
             && case.result() == Some(CaseResult::Yes)
@@ -65,7 +66,6 @@ fn accepted(
             ),
         ManteonError::InvalidAuditAccount
     );
-    let candidate = event.result.ok_or(ManteonError::InvalidEventResult)?;
     candidate.validate(&event.definition, now)?;
     let finalized = case.finalized_at.ok_or(ManteonError::InvalidAuditAccount)?;
     require!(

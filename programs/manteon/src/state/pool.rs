@@ -35,10 +35,10 @@ pub struct Pool {
     pub lock_at: i64,
     pub horizon_at: i64,
 
-    // Lifecycle and current audit attempt.
+    // Lifecycle and the immutable accepted audit result.
     pub state: PoolState,
-    pub next_case_nonce: u64,
-    pub current_case: Option<Pubkey>,
+    /// First eligible Yes applied to this market; never replaced.
+    pub accepted_case: Option<Pubkey>,
 
     // Participation basis, frozen for competitive settlement.
     /// Participating principal; becomes the immutable basis at settlement freeze.
@@ -54,11 +54,13 @@ pub struct Pool {
     /// Principal of consumed competitive Stakes, including zero-value payouts.
     pub claimed_principal: u64,
 
-    // Retained candidate-submission fallback anchor.
+    // Retained first-proposal anchor.
     /// Clock time of the first successfully funded proposal.
-    /// Preserves public submission eligibility across candidate changes/retries.
+    /// Anchors the timed fallback without being reset by another author's Case.
     /// Settlement service eligibility is derived separately from audit finality.
     pub service_eligible_at: Option<i64>,
+    /// Competition permanently opened by elapsed fallback or a rejected service Case.
+    pub public_proposals: bool,
 }
 
 impl Pool {

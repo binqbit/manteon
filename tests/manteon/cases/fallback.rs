@@ -3,7 +3,6 @@ use manteon::{
     error::ManteonError,
     state::{Event, EventDefinition},
 };
-use solana_instruction::AccountMeta;
 use solana_instruction_error::InstructionError;
 use solana_signer::Signer;
 use solana_transaction_error::TransactionError;
@@ -75,10 +74,8 @@ fn horizon_submission_opens_at_its_own_deadline_while_service_can_submit_earlier
                 public_at
             })
         );
-        assert_eq!(
-            (pool.current_case, pool.next_case_nonce),
-            (Some(case.key), 1)
-        );
+        assert_eq!(pool.accepted_case, None);
+        assert_eq!(case.identity.nonce, 0);
         assert_eq!(context.policy_uses(), 2);
         assert_eq!(context.token_balance(address(case.vault)), 100);
         assert_eq!(
@@ -136,15 +133,10 @@ fn settlement_public_handoff_uses_finality_time_even_after_delayed_partial_servi
             );
             assert_eq!(context.pool_state().processed_dates, 1);
         } else {
-            context.reject(
-                &[case.begin_ix(&context, &alice)],
-                &[&alice],
-                service_window(),
-            );
+            context.send(&[case.begin_ix(&context, &alice)], &[&alice]);
         }
         context.set_time(finality + 30 * DAY);
         if !service_begins {
-            context.send(&[case.begin_ix(&context, &alice)], &[&alice]);
             context.send(&[case.process_ix(&context, &alice, &[FORECAST])], &[&alice]);
         }
         context.send(
@@ -223,16 +215,13 @@ fn public_retry_keeps_earlier_eligibility_when_the_candidate_changes() {
     let mut second_result = ResultFixture::new(&context);
     context.set_time(OPEN + 40 * DAY);
     second_result.record_time(&context);
-    let (second_case, mut retry) = CaseFixture::instruction(&context, &second_result);
-    retry
-        .accounts
-        .push(AccountMeta::new_readonly(address(first_case.key), false));
+    let (second_case, retry) = CaseFixture::instruction(&context, &second_result);
     // The event duty became public on day 31. A fresh candidate on day 40
     // must not postpone it to day 70; the separate horizon opening is day 170.
     context.send(&[retry], &[&alice]);
     let pool = context.pool_state();
-    assert_eq!(pool.current_case, Some(second_case.key));
-    assert_eq!(pool.next_case_nonce, 2);
+    assert_eq!(pool.accepted_case, None);
+    assert_eq!(second_case.identity.nonce, 0);
     assert_eq!(pool.service_eligible_at, Some(OPEN + DAY));
     assert_eq!(pool.principal, 100);
     assert_eq!(context.policy_uses(), 3);
@@ -246,10 +235,7 @@ fn public_retry_keeps_earlier_eligibility_when_the_candidate_changes() {
         .unwrap();
     let event = Event::try_deserialize(&mut event_account.data.as_slice()).unwrap();
     assert_eq!(event.definition, EventDefinition::ExternalEvent);
-    assert_eq!(
-        event.result.unwrap().occurred_at(),
-        second_result.occurred_at
-    );
+    assert!(event.result.is_none());
     assert_eq!(
         context.svm.get_account(&address(first_case.key)).unwrap(),
         first_case_account

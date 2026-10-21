@@ -47,7 +47,7 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
             .svm
             .get_account(&address(PoolContext::vault(keypair)))
             .unwrap();
-        assert_eq!(pool_account.data.len(), 337);
+        assert_eq!(pool_account.data.len(), 330);
         assert_eq!(event_account.data.len(), 261);
         for account in [&pool_account, &event_account] {
             assert_eq!(account.owner, address(manteon::ID));
@@ -70,14 +70,14 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
             (NOW + 10, NOW + 20, NOW + 30)
         );
         assert_eq!(pool.state, PoolState::Draft);
-        assert_eq!(pool.current_case, None);
-        assert_eq!(pool.next_case_nonce, 0);
+        assert_eq!(pool.accepted_case, None);
         assert_eq!(pool.principal, 0);
         assert_eq!(pool.active_dates, 0);
         assert_eq!(pool.processed_dates, 0);
         assert_eq!(pool.total_weight, 0);
         assert_eq!(pool.payout_remaining, 0);
         assert_eq!(pool.service_eligible_at, None);
+        assert!(!pool.public_proposals);
         let event = Event::try_deserialize(&mut event_account.data.as_slice()).unwrap();
         assert_eq!(event.pool, pubkey(keypair.pubkey()));
         assert_eq!(event.result, None);

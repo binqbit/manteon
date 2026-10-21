@@ -290,7 +290,7 @@ fn anchor_015_reader_rejects_decodable_but_inconsistent_snapshot_state() {
         let mut impossible = base.clone();
         let mut decoded = Pool::try_deserialize(&mut impossible[0].1.data.as_slice()).unwrap();
         decoded.state = state;
-        decoded.next_case_nonce = 1;
+        decoded.accepted_case = Some(Pubkey::new_from_array([0xa8; 32]));
         write(&mut impossible[0].1, &decoded);
         assert_eq!(
             read(&mut impossible).err(),
@@ -302,9 +302,8 @@ fn anchor_015_reader_rejects_decodable_but_inconsistent_snapshot_state() {
     decoded.state = PoolState::Settling;
     decoded.principal = 1;
     decoded.active_dates = 1;
-    decoded.current_case = Some(Pubkey::new_from_array([0xa7; 32]));
+    decoded.accepted_case = Some(Pubkey::new_from_array([0xa7; 32]));
     decoded.service_eligible_at = Some(decoded.lock_at);
-    decoded.next_case_nonce = 1;
     let mut event = Event::try_deserialize(&mut underreported[2].1.data.as_slice()).unwrap();
     event.result = Some(manteon::state::EventResult {
         extra: None,

@@ -81,8 +81,7 @@ fn permissionless_price_payouts_cover_both_directions_each_usd_source_and_accura
                 sources.update(&mut context, result_at, cumulative, after.0, after.1);
                 context.send(&[sources.ix(&context, &bob, "finalize")], &[&bob]);
                 assert_eq!(context.pool_state().state, PoolState::Settling);
-                assert_eq!(context.pool_state().current_case, None);
-                assert_eq!(context.pool_state().next_case_nonce, 0);
+                assert_eq!(context.pool_state().accepted_case, None);
                 let view = super::reads::read_context(&context).unwrap();
                 assert_eq!(view.pool.service_eligible_at, None);
                 assert_eq!(

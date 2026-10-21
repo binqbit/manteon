@@ -86,9 +86,9 @@ fn validate_active(accounts: &PriceThresholdPool<'_>, now: i64) -> Result<PriceT
             && accounts.pool.state == PoolState::Active
             && accounts.event.result.is_none()
             && accounts.monitor.baseline.is_some()
-            && accounts.pool.current_case.is_none()
-            && accounts.pool.next_case_nonce == 0
-            && accounts.pool.service_eligible_at.is_none(),
+            && accounts.pool.accepted_case.is_none()
+            && accounts.pool.service_eligible_at.is_none()
+            && !accounts.pool.public_proposals,
         ManteonError::InvalidPoolState
     );
     require!(now <= accounts.pool.horizon_at, ManteonError::InvalidTime);
@@ -117,9 +117,9 @@ pub(crate) fn activate(ctx: Context<ActivatePricePool>) -> Result<()> {
         !ctx.accounts.pool.config_released
             && ctx.accounts.pool.state == PoolState::Draft
             && ctx.accounts.event.result.is_none()
-            && ctx.accounts.pool.current_case.is_none()
-            && ctx.accounts.pool.next_case_nonce == 0
-            && ctx.accounts.pool.service_eligible_at.is_none(),
+            && ctx.accounts.pool.accepted_case.is_none()
+            && ctx.accounts.pool.service_eligible_at.is_none()
+            && !ctx.accounts.pool.public_proposals,
         ManteonError::InvalidPoolState
     );
     ctx.accounts
@@ -231,9 +231,9 @@ pub(crate) fn expire(ctx: Context<PriceThresholdPool>) -> Result<()> {
         !ctx.accounts.pool.config_released
             && ctx.accounts.pool.state == PoolState::Active
             && ctx.accounts.event.result.is_none()
-            && ctx.accounts.pool.current_case.is_none()
-            && ctx.accounts.pool.next_case_nonce == 0
+            && ctx.accounts.pool.accepted_case.is_none()
             && ctx.accounts.pool.service_eligible_at.is_none()
+            && !ctx.accounts.pool.public_proposals
             && (now > ctx.accounts.pool.horizon_at
                 || now - baseline.observed_at > i64::from(rule.max_observation_gap_seconds)),
         ManteonError::InvalidPriceObservation

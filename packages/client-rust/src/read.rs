@@ -149,8 +149,7 @@ pub(crate) fn pool_liability(
                 || pool.processed_dates != 0
                 || pool.total_weight != 0
                 || pool.payout_remaining != 0
-                || pool.next_case_nonce != 0
-                || pool.current_case.is_some()
+                || pool.accepted_case.is_some()
                 || event.result.is_some()
             {
                 return Err(ReadError::InvalidAccounting);
@@ -201,9 +200,9 @@ fn validate_event_state(pool: &Pool, event: &Event) -> core::result::Result<(), 
             params
                 .validate()
                 .map_err(|_| ReadError::InvalidRelationship)?;
-            if pool.current_case.is_some()
-                || pool.next_case_nonce != 0
+            if pool.accepted_case.is_some()
                 || pool.service_eligible_at.is_some()
+                || pool.public_proposals
             {
                 return Err(ReadError::InvalidAccounting);
             }
@@ -224,19 +223,19 @@ fn validate_event_state(pool: &Pool, event: &Event) -> core::result::Result<(), 
             }
         }
         EventDefinition::ExternalEvent => match (pool.state, event.result) {
-            (PoolState::Draft | PoolState::Active, None)
-                if pool.current_case.is_none()
-                    && pool.next_case_nonce == 0
-                    && pool.service_eligible_at.is_none() => {}
-            (
-                PoolState::Active
-                | PoolState::Settling
-                | PoolState::Claimable
-                | PoolState::Refunding,
-                Some(_),
-            ) if pool.current_case.is_some()
-                && pool.next_case_nonce > 0
-                && pool.service_eligible_at.is_some_and(|at| at >= 0) => {}
+            (PoolState::Draft, None)
+                if pool.accepted_case.is_none()
+                    && pool.service_eligible_at.is_none()
+                    && !pool.public_proposals => {}
+            (PoolState::Active, None)
+                if pool.accepted_case.is_none()
+                    && pool.service_eligible_at.is_none_or(|at| at >= 0)
+                    && (!pool.public_proposals || pool.service_eligible_at.is_some()) => {}
+            (PoolState::Settling | PoolState::Claimable | PoolState::Refunding, Some(result))
+                if pool.accepted_case.is_some()
+                    && pool.service_eligible_at.is_some_and(|at| at >= 0)
+                    && ((result.occurred_at < pool.lock_at)
+                        == (pool.state == PoolState::Refunding)) => {}
             _ => return Err(ReadError::InvalidAccounting),
         },
     }

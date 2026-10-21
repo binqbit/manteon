@@ -41,11 +41,11 @@ consumed.
 ```mermaid
 flowchart LR
     Config["Config: reusable settings"] -->|"Retained terms"| Pool["Pool: fixed competition and lifecycle"]
-    Pool --> Event["Event: rule and candidate or verified result"]
+    Pool --> Event["Event: rule and accepted or verified result"]
     Pool --> Position["Position: capital at one forecast date"]
     Position --> Stake["Stake: one owner's capital and claim right"]
     Pool --> Vault["Vault: this pool's prediction collateral"]
-    Event -->|"external event candidate"| Review["Tekmerion Case: separate review and USDC funds"]
+    Pool -->|"eligible authors propose"| Review["Independent Tekmerion Cases: separate review and USDC funds"]
 ```
 
 The prediction vault is governed by participation and payout rules. Review
@@ -59,6 +59,7 @@ prediction principal.
 sequenceDiagram
     participant Service
     participant Owner
+    participant Caller as Any wallet
     participant M as Manteon
     participant T as Tekmerion
     participant Review as Challengers and auditors
@@ -69,7 +70,7 @@ sequenceDiagram
     M->>T: Open a review with the author's separate USDC bond
     Review->>T: Fund a challenge; vote if it reaches its target
     T->>T: Finalize acceptance, rejection, Unknown or timeout
-    Service->>M: Apply the current accepted report
+    Caller->>M: Apply the first eligible final Yes
     M->>M: Freeze participating capital or enable early-event refunds
     Service->>M: Process funded dates and finalize settlement
     Owner->>M: Claim own allocation
@@ -78,9 +79,12 @@ sequenceDiagram
 
 The proposal's occurrence time is the event fact being reviewed. Review
 completion has its own time and governs public settlement access. A finalized
-Yes becomes effective in Manteon only when an eligible caller applies it.
+Yes becomes effective in Manteon only when a caller applies it.
 Until that transaction, an Active pool still follows its participation and
-horizon-exit rules.
+horizon-exit rules. Once public submission opens under the [event access
+rules](events.md#occurrence-time-and-access-windows), authors can propose in
+parallel. One pending Case cannot block another author, and remaining Cases
+keep their own review and claims after the market accepts its first Yes.
 
 Rejection, an Unknown verdict or technical failure allows a new paid attempt.
 Earlier review withdrawals remain available in Tekmerion. Other wallets gain

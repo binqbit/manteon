@@ -204,14 +204,15 @@ pub mod manteon {
 
     pub fn propose_external_event<'info>(
         ctx: Context<'info, ProposeExternalEvent<'info>>,
+        nonce: u64,
         data: EventResult,
     ) -> Result<()> {
-        instructions::propose_external_event::handle(ctx, data)
+        instructions::propose_external_event::handle(ctx, nonce, data)
     }
 
     /// Consume authenticated Yes and freeze atomically; pre-LOCK events authorize refunds.
-    pub fn begin_settlement(ctx: Context<BeginSettlement>) -> Result<()> {
-        instructions::settlement::begin_settlement::handle(ctx)
+    pub fn begin_settlement(ctx: Context<BeginSettlement>, data: EventResult) -> Result<()> {
+        instructions::settlement::begin_settlement::handle(ctx, data)
     }
 
     /// Remaining accounts are one to eight distinct writable canonical Positions.

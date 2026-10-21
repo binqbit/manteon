@@ -55,12 +55,7 @@ fn anchor_030_real_case_freezes_book_and_claims_preserve_basis_and_donations() {
     );
     case.finalize_yes(&mut context);
     // The service month uses terminal time, not when someone first invokes this instruction.
-    context.reject(
-        &[case.begin_ix(&context, &alice)],
-        &[&alice],
-        custom(ManteonError::ServiceWindow),
-    );
-    context.send(&[case.begin_ix(&context, &service)], &[&service]);
+    context.send(&[case.begin_ix(&context, &alice)], &[&alice]);
     assert_eq!(context.pool_state().state, PoolState::Settling);
     assert_eq!(
         (
@@ -377,7 +372,7 @@ fn anchor_033_late_out_of_domain_event_keeps_horizon_exit_available() {
         custom(ManteonError::UnsupportedDate),
     );
     assert_eq!(context.pool_state().state, PoolState::Active);
-    assert_eq!(context.pool_state().current_case, None);
+    assert_eq!(context.pool_state().accepted_case, None);
     context.send(
         &[context.exit_ix(&alice, context.alice_token, FORECAST)],
         &[&alice],

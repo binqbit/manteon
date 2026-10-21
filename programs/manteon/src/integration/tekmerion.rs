@@ -8,7 +8,7 @@ use tekmerion_sdk::program::{Case, Policy};
 
 use crate::{
     error::ManteonError,
-    state::{Event, Pool},
+    state::{Event, EventResult, Pool},
 };
 
 pub(crate) const CLIENT_SEED: &[u8] = b"tekmerion";
@@ -43,12 +43,12 @@ pub(crate) fn policy(account: &AccountInfo) -> Result<Policy> {
 
 pub(crate) fn case(account: &AccountInfo) -> Result<Case> {
     let value: Case = read(account, Case::SPACE)?;
-    let (key, bump) = Case::address(&value.policy, &value.subject, value.nonce);
+    let (key, bump) = Case::address(&value.policy, &value.subject, &value.author, value.nonce);
     let (_, vault_bump) = Case::vault_address(&key);
     let previous_case = value
         .nonce
         .checked_sub(1)
-        .map(|nonce| Case::address(&value.policy, &value.subject, nonce).0);
+        .map(|nonce| Case::address(&value.policy, &value.subject, &value.author, nonce).0);
     require_keys_eq!(key, account.key(), ManteonError::InvalidAuditAccount);
     require!(
         value.bump == bump
@@ -59,22 +59,18 @@ pub(crate) fn case(account: &AccountInfo) -> Result<Case> {
     Ok(value)
 }
 
-pub(crate) fn current_case(
+/// Authenticate any author's candidate against this market's immutable terms.
+pub(crate) fn candidate_case(
     account: &AccountInfo,
     pool_key: Pubkey,
     pool: &Pool,
     event: &Event,
+    candidate: &EventResult,
 ) -> Result<Case> {
-    require!(
-        pool.current_case == Some(account.key()),
-        ManteonError::InvalidAuditAccount
-    );
     let case = case(account)?;
-    let candidate = event.result.ok_or(ManteonError::InvalidEventResult)?;
     require!(
         case.policy == pool.audit_config
             && case.subject == pool_key
-            && case.nonce.checked_add(1) == Some(pool.next_case_nonce)
             && case.agreement_hash == pool.agreement_hash
             && candidate.document_hash(&event.definition, pool_key, &pool.agreement_hash)?
                 == case.result_hash,

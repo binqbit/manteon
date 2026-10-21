@@ -309,10 +309,8 @@ fn anchor_authenticated_no_and_unknown_allow_paid_bound_retries_without_settleme
             audit_balance - 100
         );
         let pool = context.pool_state();
-        assert_eq!(
-            (pool.current_case, pool.next_case_nonce),
-            (Some(case.key), nonce as u64 + 1)
-        );
+        assert_eq!(pool.accepted_case, None);
+        assert_eq!(case.identity.nonce, nonce as u64);
         if let Some(previous) = previous.as_ref() {
             context.reject(
                 &[previous.begin_ix(&context, &service)],

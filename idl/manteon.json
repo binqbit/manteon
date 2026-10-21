@@ -12,7 +12,16 @@
   "instructions": [
     {
       "name": "accept_global_admin",
-      "discriminator": [238, 44, 208, 164, 154, 153, 79, 81],
+      "discriminator": [
+        238,
+        44,
+        208,
+        164,
+        154,
+        153,
+        79,
+        81
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -27,7 +36,16 @@
     },
     {
       "name": "activate_pool",
-      "discriminator": [129, 125, 90, 174, 121, 169, 225, 239],
+      "discriminator": [
+        129,
+        125,
+        90,
+        174,
+        121,
+        169,
+        225,
+        239
+      ],
       "accounts": [
         {
           "name": "service_authority",
@@ -58,7 +76,16 @@
     },
     {
       "name": "activate_price_pool",
-      "discriminator": [111, 97, 138, 183, 18, 3, 81, 60],
+      "discriminator": [
+        111,
+        97,
+        138,
+        183,
+        18,
+        3,
+        81,
+        60
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -93,7 +120,16 @@
       "docs": [
         "Consume authenticated Yes and freeze atomically; pre-LOCK events authorize refunds."
       ],
-      "discriminator": [124, 223, 80, 249, 19, 59, 26, 92],
+      "discriminator": [
+        124,
+        223,
+        80,
+        249,
+        19,
+        59,
+        26,
+        92
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -108,21 +144,39 @@
           "writable": true
         },
         {
-          "name": "event"
+          "name": "event",
+          "writable": true
         },
         {
-          "name": "case",
-          "optional": true
+          "name": "case"
         },
         {
           "name": "vault"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "data",
+          "type": {
+            "defined": {
+              "name": "EventResult"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "claim",
-      "discriminator": [62, 198, 214, 193, 213, 159, 108, 210],
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -178,7 +232,16 @@
     },
     {
       "name": "complete_pool",
-      "discriminator": [172, 201, 3, 45, 136, 12, 87, 117],
+      "discriminator": [
+        172,
+        201,
+        3,
+        45,
+        136,
+        12,
+        87,
+        117
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -197,7 +260,16 @@
     },
     {
       "name": "create_config",
-      "discriminator": [201, 207, 243, 114, 75, 111, 47, 189],
+      "discriminator": [
+        201,
+        207,
+        243,
+        114,
+        75,
+        111,
+        47,
+        189
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -277,7 +349,16 @@
     },
     {
       "name": "create_pool",
-      "discriminator": [233, 146, 209, 142, 207, 104, 64, 188],
+      "discriminator": [
+        233,
+        146,
+        209,
+        142,
+        207,
+        104,
+        64,
+        188
+      ],
       "accounts": [
         {
           "name": "service_authority",
@@ -303,7 +384,9 @@
         },
         {
           "name": "collateral_mint",
-          "docs": ["Initialized legacy SPL collateral selected by Config."]
+          "docs": [
+            "Initialized legacy SPL collateral selected by Config."
+          ]
         },
         {
           "name": "vault_authority"
@@ -339,13 +422,19 @@
         {
           "name": "agreement_hash",
           "type": {
-            "array": ["u8", 32]
+            "array": [
+              "u8",
+              32
+            ]
           }
         },
         {
           "name": "expected_config_hash",
           "type": {
-            "array": ["u8", 32]
+            "array": [
+              "u8",
+              32
+            ]
           }
         },
         {
@@ -364,7 +453,16 @@
     },
     {
       "name": "exit",
-      "discriminator": [234, 32, 12, 71, 126, 5, 219, 160],
+      "discriminator": [
+        234,
+        32,
+        12,
+        71,
+        126,
+        5,
+        219,
+        160
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -408,7 +506,16 @@
     },
     {
       "name": "expire_price_observation",
-      "discriminator": [42, 143, 101, 55, 199, 33, 114, 144],
+      "discriminator": [
+        42,
+        143,
+        101,
+        55,
+        199,
+        33,
+        114,
+        144
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -438,7 +545,16 @@
     },
     {
       "name": "finalize_price_threshold",
-      "discriminator": [5, 122, 229, 193, 127, 94, 212, 253],
+      "discriminator": [
+        5,
+        122,
+        229,
+        193,
+        127,
+        94,
+        212,
+        253
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -468,7 +584,16 @@
     },
     {
       "name": "finalize_settlement",
-      "discriminator": [220, 72, 152, 119, 178, 196, 25, 170],
+      "discriminator": [
+        220,
+        72,
+        152,
+        119,
+        178,
+        196,
+        25,
+        170
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -494,7 +619,16 @@
     },
     {
       "name": "initialize_global_config",
-      "discriminator": [113, 216, 122, 131, 225, 209, 22, 55],
+      "discriminator": [
+        113,
+        216,
+        122,
+        131,
+        225,
+        209,
+        22,
+        55
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -539,7 +673,16 @@
       "docs": [
         "Remaining accounts are one to eight distinct writable canonical Positions."
       ],
-      "discriminator": [218, 33, 171, 43, 75, 230, 88, 39],
+      "discriminator": [
+        218,
+        33,
+        171,
+        43,
+        75,
+        230,
+        88,
+        39
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -564,7 +707,16 @@
     },
     {
       "name": "propose_external_event",
-      "discriminator": [170, 64, 219, 21, 224, 44, 67, 56],
+      "discriminator": [
+        170,
+        64,
+        219,
+        21,
+        224,
+        44,
+        67,
+        56
+      ],
       "accounts": [
         {
           "name": "author",
@@ -583,8 +735,7 @@
           "writable": true
         },
         {
-          "name": "event",
-          "writable": true
+          "name": "event"
         },
         {
           "name": "policy",
@@ -592,6 +743,10 @@
         },
         {
           "name": "client_authority"
+        },
+        {
+          "name": "access_case",
+          "optional": true
         },
         {
           "name": "source",
@@ -624,6 +779,10 @@
       ],
       "args": [
         {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
           "name": "data",
           "type": {
             "defined": {
@@ -635,7 +794,16 @@
     },
     {
       "name": "propose_global_admin",
-      "discriminator": [186, 253, 247, 220, 222, 63, 148, 30],
+      "discriminator": [
+        186,
+        253,
+        247,
+        220,
+        222,
+        63,
+        148,
+        30
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -655,7 +823,16 @@
     },
     {
       "name": "record_price_observation",
-      "discriminator": [88, 159, 91, 146, 36, 14, 109, 84],
+      "discriminator": [
+        88,
+        159,
+        91,
+        146,
+        36,
+        14,
+        109,
+        84
+      ],
       "accounts": [
         {
           "name": "caller",
@@ -685,7 +862,16 @@
     },
     {
       "name": "stake",
-      "discriminator": [206, 176, 202, 18, 200, 209, 179, 108],
+      "discriminator": [
+        206,
+        176,
+        202,
+        18,
+        200,
+        209,
+        179,
+        108
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -745,7 +931,16 @@
     },
     {
       "name": "unstake",
-      "discriminator": [90, 95, 107, 42, 205, 124, 50, 225],
+      "discriminator": [
+        90,
+        95,
+        107,
+        42,
+        205,
+        124,
+        50,
+        225
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -793,7 +988,16 @@
     },
     {
       "name": "update_config",
-      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -869,7 +1073,16 @@
     },
     {
       "name": "update_global_config",
-      "discriminator": [164, 84, 130, 189, 111, 58, 250, 200],
+      "discriminator": [
+        164,
+        84,
+        130,
+        189,
+        111,
+        58,
+        250,
+        200
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -893,7 +1106,16 @@
     },
     {
       "name": "withdraw_platform_fees",
-      "discriminator": [87, 24, 138, 122, 62, 146, 186, 199],
+      "discriminator": [
+        87,
+        24,
+        138,
+        122,
+        62,
+        146,
+        186,
+        199
+      ],
       "accounts": [
         {
           "name": "authority",
@@ -928,31 +1150,94 @@
   "accounts": [
     {
       "name": "Config",
-      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
     },
     {
       "name": "Event",
-      "discriminator": [93, 52, 253, 229, 28, 199, 196, 160]
+      "discriminator": [
+        93,
+        52,
+        253,
+        229,
+        28,
+        199,
+        196,
+        160
+      ]
     },
     {
       "name": "GlobalConfig",
-      "discriminator": [149, 8, 156, 202, 160, 252, 176, 217]
+      "discriminator": [
+        149,
+        8,
+        156,
+        202,
+        160,
+        252,
+        176,
+        217
+      ]
     },
     {
       "name": "Pool",
-      "discriminator": [241, 154, 109, 4, 17, 177, 109, 188]
+      "discriminator": [
+        241,
+        154,
+        109,
+        4,
+        17,
+        177,
+        109,
+        188
+      ]
     },
     {
       "name": "Position",
-      "discriminator": [170, 188, 143, 228, 122, 64, 247, 208]
+      "discriminator": [
+        170,
+        188,
+        143,
+        228,
+        122,
+        64,
+        247,
+        208
+      ]
     },
     {
       "name": "PriceMonitor",
-      "discriminator": [120, 218, 183, 198, 214, 120, 105, 44]
+      "discriminator": [
+        120,
+        218,
+        183,
+        198,
+        214,
+        120,
+        105,
+        44
+      ]
     },
     {
       "name": "Stake",
-      "discriminator": [150, 197, 176, 29, 55, 132, 112, 149]
+      "discriminator": [
+        150,
+        197,
+        176,
+        29,
+        55,
+        132,
+        112,
+        149
+      ]
     }
   ],
   "errors": [
@@ -1255,7 +1540,9 @@
     },
     {
       "name": "Event",
-      "docs": ["Immutable event rule and its occurrence facts."],
+      "docs": [
+        "Immutable event rule and its occurrence facts."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1274,7 +1561,7 @@
           {
             "name": "result",
             "docs": [
-              "Latest external proposal or verified price result. External acceptance requires its Case."
+              "Accepted external occurrence or verified price result; pending proposals live in their Cases."
             ],
             "type": {
               "option": {
@@ -1450,14 +1737,21 @@
           },
           {
             "name": "agreement_hash",
-            "docs": ["SHA-256 of the immutable canonical agreement document."],
+            "docs": [
+              "SHA-256 of the immutable canonical agreement document."
+            ],
             "type": {
-              "array": ["u8", 32]
+              "array": [
+                "u8",
+                32
+              ]
             }
           },
           {
             "name": "algorithm",
-            "docs": ["Immutable payout accuracy curve."],
+            "docs": [
+              "Immutable payout accuracy curve."
+            ],
             "type": {
               "defined": {
                 "name": "PoolAlgorithm"
@@ -1485,11 +1779,10 @@
             }
           },
           {
-            "name": "next_case_nonce",
-            "type": "u64"
-          },
-          {
-            "name": "current_case",
+            "name": "accepted_case",
+            "docs": [
+              "First eligible Yes applied to this market; never replaced."
+            ],
             "type": {
               "option": "pubkey"
             }
@@ -1534,12 +1827,19 @@
             "name": "service_eligible_at",
             "docs": [
               "Clock time of the first successfully funded proposal.",
-              "Preserves public submission eligibility across candidate changes/retries.",
+              "Anchors the timed fallback without being reset by another author's Case.",
               "Settlement service eligibility is derived separately from audit finality."
             ],
             "type": {
               "option": "i64"
             }
+          },
+          {
+            "name": "public_proposals",
+            "docs": [
+              "Competition permanently opened by elapsed fallback or a rejected service Case."
+            ],
+            "type": "bool"
           }
         ]
       }
@@ -1601,7 +1901,9 @@
           },
           {
             "name": "forecast_day",
-            "docs": ["Signed UTC day since the Unix epoch, not a timestamp."],
+            "docs": [
+              "Signed UTC day since the Unix epoch, not a timestamp."
+            ],
             "type": "i64"
           },
           {
@@ -1830,7 +2132,10 @@
               {
                 "name": "feed_id",
                 "type": {
-                  "array": ["u8", 32]
+                  "array": [
+                    "u8",
+                    32
+                  ]
                 }
               },
               {

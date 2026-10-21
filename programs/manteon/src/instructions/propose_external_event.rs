@@ -28,7 +28,6 @@ pub struct ProposeExternalEvent<'info> {
     )]
     pub pool: Account<'info, Pool>,
     #[account(
-        mut,
         seeds = [Event::SEED, pool.key().as_ref()],
         bump,
         has_one = pool
@@ -47,6 +46,8 @@ pub struct ProposeExternalEvent<'info> {
         bump
     )]
     pub client_authority: UncheckedAccount<'info>,
+    /// CHECK: optional finalized service failure authenticated below to open competition.
+    pub access_case: Option<UncheckedAccount<'info>>,
 
     // Author funding.
     #[account(
@@ -79,11 +80,12 @@ pub struct ProposeExternalEvent<'info> {
 
 pub(crate) fn handle<'info>(
     ctx: Context<'info, ProposeExternalEvent<'info>>,
+    nonce: u64,
     data: EventResult,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
     require!(
-        !pool.config_released && pool.state == PoolState::Active,
+        !pool.config_released && pool.state == PoolState::Active && pool.accepted_case.is_none(),
         ManteonError::InvalidPoolState
     );
     let now = Clock::get()?.unix_timestamp;
@@ -101,20 +103,43 @@ pub(crate) fn handle<'info>(
             manteon_core::math::utc_day::utc_day(data.occurred_at()),
         )?;
     }
-    let service_eligible_at = admission::candidate_access(
+    let service_failed = ctx
+        .accounts
+        .access_case
+        .as_ref()
+        .map(|account| {
+            let case = tekmerion::case(account)?;
+            require!(
+                case.policy == pool.audit_config
+                    && case.subject == pool.key()
+                    && case.agreement_hash == pool.agreement_hash
+                    && case.author == ctx.accounts.config.service_authority,
+                ManteonError::InvalidAuditAccount
+            );
+            validate_retryable(&case, now)?;
+            Ok::<_, anchor_lang::error::Error>(())
+        })
+        .transpose()?
+        .is_some();
+    let (service_eligible_at, public_proposals) = admission::candidate_access(
         pool,
         ctx.accounts.author.key(),
         ctx.accounts.config.service_authority,
         now,
+        service_failed,
     )?;
 
     // Authenticate the Policy and completed predecessor before funding a new attempt.
     let policy = tekmerion::policy(&ctx.accounts.policy)?;
     require!(policy.active_uses > 0, ManteonError::InvalidAuditAccount);
-    validate_previous_case(pool, &ctx.accounts.event, ctx.remaining_accounts, now)?;
+    validate_previous_case(
+        pool,
+        ctx.accounts.author.key(),
+        nonce,
+        ctx.remaining_accounts,
+        now,
+    )?;
 
-    let nonce = pool.next_case_nonce;
-    let next_nonce = nonce.checked_add(1).ok_or(ManteonError::Arithmetic)?;
     let result_hash = data.document_hash(
         &ctx.accounts.event.definition,
         pool.key(),
@@ -129,46 +154,50 @@ pub(crate) fn handle<'info>(
         ctx.remaining_accounts,
     )?;
 
-    // Publish the new candidate only after the CPI and its postconditions succeed.
-    let pool = &mut ctx.accounts.pool;
-    pool.current_case = Some(ctx.accounts.case.key());
-    pool.next_case_nonce = next_nonce;
-    pool.service_eligible_at = Some(service_eligible_at);
-    ctx.accounts.event.result = Some(data);
+    // No candidate owns the market. Preserve only the first successful proposal time.
+    ctx.accounts.pool.service_eligible_at = Some(service_eligible_at);
+    ctx.accounts.pool.public_proposals = public_proposals;
     Ok(())
 }
 
 fn validate_previous_case(
     pool: &Account<Pool>,
-    event: &Account<Event>,
+    author: Pubkey,
+    nonce: u64,
     remaining: &[AccountInfo],
     now: i64,
 ) -> Result<()> {
-    match pool.current_case {
-        None => require!(
-            remaining.is_empty()
-                && pool.next_case_nonce == 0
-                && pool.service_eligible_at.is_none()
-                && event.result.is_none(),
+    if nonce == 0 {
+        require!(remaining.is_empty(), ManteonError::InvalidAuditAccount);
+    } else {
+        require!(remaining.len() == 1, ManteonError::InvalidAuditAccount);
+        let previous = tekmerion::case(&remaining[0])?;
+        require!(
+            previous.policy == pool.audit_config
+                && previous.subject == pool.key()
+                && previous.author == author
+                && previous.nonce.checked_add(1) == Some(nonce)
+                && previous.agreement_hash == pool.agreement_hash,
             ManteonError::InvalidAuditAccount
-        ),
-        Some(_) => {
-            require!(remaining.len() == 1, ManteonError::InvalidAuditAccount);
-            let previous = tekmerion::current_case(&remaining[0], pool.key(), pool, event)?;
-            require!(
-                previous.phase() == CasePhase::Finalized
-                    && previous.finalized_at.is_some_and(|at| at >= 0 && at <= now)
-                    && matches!(
-                        (previous.result(), previous.completion_method()),
-                        (
-                            Some(CaseResult::No | CaseResult::Unknown),
-                            Some(CompletionMethod::Audited)
-                        ) | (None, Some(CompletionMethod::TechnicalFailure))
-                    ),
-                ManteonError::InvalidAuditAccount
-            );
-        }
+        );
+        validate_retryable(&previous, now)?;
     }
+    Ok(())
+}
+
+fn validate_retryable(case: &tekmerion_sdk::program::Case, now: i64) -> Result<()> {
+    require!(
+        case.phase() == CasePhase::Finalized
+            && case.finalized_at.is_some_and(|at| at >= 0 && at <= now)
+            && matches!(
+                (case.result(), case.completion_method()),
+                (
+                    Some(CaseResult::No | CaseResult::Unknown),
+                    Some(CompletionMethod::Audited)
+                ) | (None, Some(CompletionMethod::TechnicalFailure))
+            ),
+        ManteonError::InvalidAuditAccount
+    );
     Ok(())
 }
 
@@ -219,7 +248,7 @@ impl<'info> ProposeExternalEvent<'info> {
                 && created.subject == self.pool.key()
                 && created.author == self.author.key()
                 && created.nonce == nonce
-                && created.previous_case == self.pool.current_case
+                && created.previous_case == previous.first().map(|account| account.key())
                 && created.agreement_hash == self.pool.agreement_hash
                 && created.result_hash == result_hash
                 && created.author_principal == policy.rules.author_bond

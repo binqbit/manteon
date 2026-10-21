@@ -102,6 +102,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         &idl,
         "propose_external_event",
         manteon::instruction::ProposeExternalEvent {
+            nonce: 0,
             data: manteon::state::EventResult {
                 extra: None,
                 occurred_at: 1_800_000_000,
@@ -113,9 +114,10 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
             ("payer", true, true),
             ("config", false, false),
             ("pool", false, true),
-            ("event", false, true),
+            ("event", false, false),
             ("policy", false, true),
             ("client_authority", false, false),
+            ("access_case", false, false),
             ("source", false, true),
             ("case", false, true),
             ("author_receipt", false, true),
@@ -264,8 +266,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         "lock_at",
         "horizon_at",
         "state",
-        "next_case_nonce",
-        "current_case",
+        "accepted_case",
         "principal",
         "active_dates",
         "processed_dates",
@@ -273,6 +274,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         "payout_remaining",
         "claimed_principal",
         "service_eligible_at",
+        "public_proposals",
     ];
     assert_eq!(
         pool_fields, expected,

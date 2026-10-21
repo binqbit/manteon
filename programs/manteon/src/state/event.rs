@@ -17,7 +17,7 @@ pub struct Event {
     pub pool: Pubkey,
     pub definition: EventDefinition,
 
-    /// Latest external proposal or verified price result. External acceptance requires its Case.
+    /// Accepted external occurrence or verified price result; pending proposals live in their Cases.
     pub result: Option<EventResult>,
 }
 

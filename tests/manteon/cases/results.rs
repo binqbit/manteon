@@ -1,4 +1,4 @@
-use anchor_lang::{AccountDeserialize, AccountSerialize, InstructionData};
+use anchor_lang::{AccountDeserialize, InstructionData};
 use manteon::{
     error::ManteonError,
     state::{Event, EventResult, PoolState},
@@ -53,7 +53,7 @@ fn external_result_is_typed_past_bounded_and_never_funds_invalid_facts() {
         },
     ] {
         let mut instruction = valid.clone();
-        instruction.data = manteon::instruction::ProposeExternalEvent { data }.data();
+        instruction.data = manteon::instruction::ProposeExternalEvent { nonce: 0, data }.data();
         context.reject(
             &[instruction],
             &[&alice],
@@ -61,7 +61,6 @@ fn external_result_is_typed_past_bounded_and_never_funds_invalid_facts() {
         );
     }
 
-    assert_eq!(context.pool_state().next_case_nonce, 0);
     assert_eq!(context.pool_state().service_eligible_at, None);
 }
 
@@ -80,12 +79,13 @@ fn external_event_settles_the_audited_occurrence_time_and_binds_both_documents()
 
         context.set_time((FORECAST + 3) * DAY);
         let result = ResultFixture::new(&context);
-        let (case, mut instruction) = CaseFixture::instruction(&context, &result);
+        let (mut case, mut instruction) = CaseFixture::instruction(&context, &result);
         let data = EventResult {
             extra: None,
             occurred_at: FORECAST * DAY,
         };
-        instruction.data = manteon::instruction::ProposeExternalEvent { data }.data();
+        instruction.data = manteon::instruction::ProposeExternalEvent { nonce: 0, data }.data();
+        case.result = data;
 
         let metadata = context.send(&[instruction], &[&alice]);
         println!(
@@ -105,7 +105,7 @@ fn external_event_settles_the_audited_occurrence_time_and_binds_both_documents()
 
         let event_key = address(PoolContext::event(&context.pool));
         let original = context.svm.get_account(&event_key).unwrap();
-        let mut event = Event::try_deserialize(&mut original.data.as_slice()).unwrap();
+        let event = Event::try_deserialize(&mut original.data.as_slice()).unwrap();
         let stored = case_state(&context, &case);
 
         assert_eq!(stored.subject, pubkey(context.pool.pubkey()));
@@ -118,23 +118,17 @@ fn external_event_settles_the_audited_occurrence_time_and_binds_both_documents()
 
         case.finalize_yes(&mut context);
 
-        // Even a well-formed program-owned snapshot with altered facts cannot consume the Case.
-        event.result = Some(EventResult {
-            extra: None,
-            occurred_at: FORECAST * DAY + 1,
-        });
-        let mut altered = original.clone();
-        event
-            .try_serialize(&mut altered.data.as_mut_slice())
-            .unwrap();
-        context.svm.set_account(event_key, altered).unwrap();
+        // The accepting instruction must supply exactly the candidate committed in this Case.
+        assert!(event.result.is_none());
+        case.result.occurred_at += 1;
         context.reject(
             &[case.begin_ix(&context, &service)],
             &[&service],
             invalid(ManteonError::InvalidAuditAccount),
         );
+        case.result = data;
+        assert_eq!(context.svm.get_account(&event_key).unwrap(), original);
 
-        context.svm.set_account(event_key, original).unwrap();
         context.send(
             &[
                 case.begin_ix(&context, &service),

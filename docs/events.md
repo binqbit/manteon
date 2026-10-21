@@ -39,35 +39,47 @@ challenge under those locked terms:
 See [Tekmerion's process](../vendor/tekmerion/docs/how-it-works.md) for review
 funding, voting, fees and withdrawals.
 
-Manteon accepts only the pool's current, authenticated, finalized Yes, completed
-optimistically or by audit. Applying that acceptance is a separate Manteon
-transaction. A review result becoming final does not move prediction capital
-or automatically freeze the pool.
+Manteon accepts the first authenticated, finalized Yes successfully applied to
+the pool, whether optimistic or audited. Any wallet can apply it. That single
+transaction fixes the accepted Case and occurrence facts and freezes prediction
+capital or enables early-event refunds. Two competing Yes results cannot
+replace one another: transaction ordering selects the first successful acceptance.
+A review becoming final alone does not freeze the market.
 
-An audited No, audited Unknown or technical failure permits a new attempt with
-a fresh author bond. An accepted Yes ends that attempt sequence. Earlier
-review claims remain available in Tekmerion, and retries preserve the time of
-the first successfully funded proposal.
+### Parallel cases prevent blocked results
+
+Each author has a separate sequence of Cases for the same market. One author
+can have only one unresolved Case; different eligible authors can open and
+resolve their Cases concurrently. A pending or repeatedly rejected proposal
+therefore cannot monopolize the market once public submission is available.
+
+An audited No, audited Unknown or technical failure allows that author to
+retry with a fresh bond. All Cases keep their own funding, audit deadlines and
+claims. When one Yes is applied, new Cases are disabled, while existing Cases
+finish their own review and withdrawals without changing the accepted market
+result. A latest-completed Case displayed by an application is informational;
+it has no authority to replace the accepted Case.
 
 ### Occurrence time and access windows
 
-Three clocks have different meanings:
+The service has the initial proposal opportunity while the pool is Active.
+Other authors can challenge that proposal. Public proposals become available
+when either of these conditions holds:
 
-| Time                                    | Purpose                                                                 |
-| --------------------------------------- | ----------------------------------------------------------------------- |
-| Reported occurrence time                | The external fact under review and the UTC day used to score forecasts.      |
-| First successfully funded proposal time | Anchors public proposal access across retries.                          |
-| Review finalization time                | Anchors public access to applying acceptance and completing settlement. |
+- A service-authored Case ends in audited No, audited Unknown or technical
+  failure. A proposer supplies that authenticated Case as proof to open access.
+- The earlier of thirty days before the horizon and thirty days after the first
+  paid proposal is reached. With no proposal, the horizon-based opening applies.
 
-The service may propose as soon as the pool is Active. Other authors may
-propose at the earlier of thirty days before the horizon and thirty days after
-the first paid proposal. Before any proposal exists, the horizon-based opening
-is the public path. A caller-supplied occurrence time cannot accelerate it.
+Once a public proposal succeeds, the opening is retained permanently. Neither
+a service retry nor another author's new Case can close or restart it. The
+reported occurrence date cannot accelerate these access windows.
 
-The service may apply an accepted Yes and process/finalize settlement
-immediately. Other callers may do so thirty days after that Case's
-finalization. Every service window means exactly thirty UTC days, independently
-of H30, H15 or H7. Owner claims require no service signature.
+Applying a finalized Yes is permissionless immediately. Processing funded dates
+and completing settlement retain their existing service priority: the service
+can act immediately, and other callers can act thirty days after the accepted
+Case's finalization. Every service window means exactly thirty UTC days,
+independently of H30, H15 or H7. Owner claims require no service signature.
 
 An accepted occurrence before entry close enables principal refunds. An
 occurrence at or after entry close freezes the remaining capital for

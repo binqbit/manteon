@@ -47,6 +47,7 @@ declare_process_instruction!(Relay, 1, |context| {
 
 fn finalization() -> Vec<u8> {
     manteon::instruction::ProposeExternalEvent {
+        nonce: 0,
         data: EventResult {
             extra: None,
             occurred_at: 1_800_000_000,
@@ -84,8 +85,8 @@ fn anchor_004_malformed_candidate_cannot_reach_the_handler() {
     assert_malformed(truncated, ErrorCode::InstructionDidNotDeserialize);
 
     let mut wrong_tag = finalization();
-    // Shared timestamp (eight bytes) precedes the optional additional facts.
-    wrong_tag[16] = 0xff;
+    // Author nonce and shared timestamp precede the optional additional facts.
+    wrong_tag[24] = 0xff;
     assert_malformed(wrong_tag, ErrorCode::InstructionDidNotDeserialize);
 }
 
@@ -188,7 +189,13 @@ fn anchor_017_financial_operations_require_canonical_encoding() {
         manteon::instruction::Unstake { amount: 1 }.data(),
         manteon::instruction::Exit {}.data(),
         finalization(),
-        manteon::instruction::BeginSettlement {}.data(),
+        manteon::instruction::BeginSettlement {
+            data: manteon::state::EventResult {
+                extra: None,
+                occurred_at: 0,
+            },
+        }
+        .data(),
         manteon::instruction::ProcessPositions {}.data(),
         manteon::instruction::FinalizeSettlement {}.data(),
         manteon::instruction::Claim {}.data(),

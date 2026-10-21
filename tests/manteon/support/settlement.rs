@@ -15,6 +15,7 @@ pub struct CaseFixture {
     pub identity: CaseAddress,
     pub key: Pubkey,
     pub vault: Pubkey,
+    pub result: manteon::state::EventResult,
 }
 impl CaseFixture {
     pub fn instruction(context: &TestContext, result: &ResultFixture) -> (Self, Instruction) {
@@ -32,11 +33,23 @@ impl CaseFixture {
         author: Pubkey,
         source: Pubkey,
     ) -> (Self, Instruction) {
-        let nonce = context.pool_state().next_case_nonce;
-        let identity = CaseAddress {
+        let mut identity = CaseAddress {
             policy: context.policy,
             subject: pubkey(context.pool.pubkey()),
-            nonce,
+            author,
+            nonce: 0,
+        };
+        while context
+            .svm
+            .get_account(&address(identity.address()))
+            .is_some()
+        {
+            identity.nonce += 1;
+        }
+        let nonce = identity.nonce;
+        let data = manteon::state::EventResult {
+            extra: None,
+            occurred_at: result.occurred_at,
         };
         let key = identity.address();
         let vault = identity.vault();
@@ -50,6 +63,7 @@ impl CaseFixture {
                 event: PoolContext::event(&context.pool),
                 policy: context.policy,
                 client_authority: context.client_authority,
+                access_case: None,
                 source,
                 case: key,
                 author_receipt: identity.receipt(&author),
@@ -60,19 +74,14 @@ impl CaseFixture {
                 system_program: anchor_lang::system_program::ID,
             }
             .to_account_metas(None),
-            data: manteon::instruction::ProposeExternalEvent {
-                data: manteon::state::EventResult {
-                    extra: None,
-                    occurred_at: result.occurred_at,
-                },
-            }
-            .data(),
+            data: manteon::instruction::ProposeExternalEvent { nonce, data }.data(),
         };
         (
             Self {
                 identity,
                 key,
                 vault,
+                result: data,
             },
             ix,
         )
@@ -84,7 +93,7 @@ impl CaseFixture {
         context.send(&[ix], &[&author]);
         assert_eq!(context.token_balance(context.audit_source), before - 100);
         assert_eq!(context.token_balance(address(case.vault)), 100);
-        assert_eq!(context.pool_state().current_case, Some(case.key));
+        assert_eq!(context.pool_state().accepted_case, None);
         case
     }
     pub fn finalize_yes(&self, context: &mut TestContext) {
@@ -101,11 +110,11 @@ impl CaseFixture {
                 config: pubkey(context.config_address),
                 pool: pubkey(context.pool.pubkey()),
                 event: PoolContext::event(&context.pool),
-                case: Some(self.key),
+                case: self.key,
                 vault: PoolContext::vault(&context.pool),
             }
             .to_account_metas(None),
-            data: manteon::instruction::BeginSettlement {}.data(),
+            data: manteon::instruction::BeginSettlement { data: self.result }.data(),
         }
     }
     pub fn process_ix(&self, context: &TestContext, caller: &Keypair, days: &[i64]) -> Instruction {

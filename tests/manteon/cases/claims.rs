@@ -227,7 +227,7 @@ fn payout_and_refund_require_the_owner_and_bound_accounts() {
         context.reject(
             std::slice::from_ref(&claim),
             &[&alice],
-            custom(0, ManteonError::InvalidPoolState),
+            custom(0, ManteonError::InvalidEventResult),
         );
         context.send(&[case.begin_ix(&context, &service)], &[&service]);
         if !refund {

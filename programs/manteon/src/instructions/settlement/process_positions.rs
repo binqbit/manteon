@@ -29,7 +29,7 @@ pub struct ProcessPositions<'info> {
         has_one = pool
     )]
     pub event: Account<'info, Event>,
-    /// CHECK: authenticated terminal current Case verified by resolution adapter.
+    /// CHECK: authenticated terminal accepted Case verified by resolution adapter.
     pub case: Option<UncheckedAccount<'info>>,
 }
 

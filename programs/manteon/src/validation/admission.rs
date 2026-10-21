@@ -46,7 +46,8 @@ pub(crate) fn candidate_access(
     author: Pubkey,
     service: Pubkey,
     now: i64,
-) -> Result<i64> {
+    service_failed: bool,
+) -> Result<(i64, bool)> {
     let public_at = pool
         .horizon_at
         .checked_sub(SERVICE_MONTH)
@@ -56,9 +57,7 @@ pub(crate) fn candidate_access(
     let proposal_fallback = eligible_at
         .checked_add(SERVICE_MONTH)
         .ok_or(ManteonError::Arithmetic)?;
-    require!(
-        author == service || now >= public_at.min(proposal_fallback),
-        ManteonError::ServiceWindow
-    );
-    Ok(eligible_at)
+    let public = pool.public_proposals || service_failed || now >= public_at.min(proposal_fallback);
+    require!(author == service || public, ManteonError::ServiceWindow);
+    Ok((eligible_at, public))
 }

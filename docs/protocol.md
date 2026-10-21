@@ -128,7 +128,7 @@ duplicate accounts in a batch and zero-principal dates.
 
 Finalization enables claims only after every funded date has contributed and a
 nonempty pool has a positive denominator. An empty pool needs no date
-processing. External event processing authenticates the accepted current review at every
+processing. External event processing authenticates the accepted review at every
 step and follows its [service window](events.md#external-event). Price processing
 is public immediately after confirmation.
 
@@ -165,7 +165,7 @@ instruction payloads with unread trailing bytes, including calls from other
 programs.
 
 Tekmerion review is separate from prediction custody. Manteon authenticates its
-policy, current attempt, accepted completion and both document commitments.
+policy, author-specific Case identity, accepted completion and both document commitments.
 Price acceptance authenticates the fixed external sources described in
 [event rules](events.md). Network access, program upgrades, external evidence
 and source availability remain integration dependencies.

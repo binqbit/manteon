@@ -26,6 +26,8 @@ mod fallback;
 mod global_config;
 #[path = "cases/idl.rs"]
 mod idl;
+#[path = "cases/multiple_cases.rs"]
+mod multiple_cases;
 #[path = "cases/participation.rs"]
 mod participation;
 #[path = "cases/participation_guards.rs"]
