@@ -789,6 +789,14 @@
               "name": "EventResult"
             }
           }
+        },
+        {
+          "name": "mode",
+          "type": {
+            "defined": {
+              "name": "ProposalMode"
+            }
+          }
         }
       ]
     },
@@ -2044,6 +2052,29 @@
           {
             "name": "minimum_quote_liquidity_usd_e9",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProposalMode",
+      "docs": [
+        "Bonded challenge review or an author-paid audit available after public opening."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Bonded"
+          },
+          {
+            "name": "DirectAudit",
+            "fields": [
+              {
+                "name": "expected_audit_fee",
+                "type": "u64"
+              }
+            ]
           }
         ]
       }

@@ -48,6 +48,7 @@ declare_process_instruction!(Relay, 1, |context| {
 fn finalization() -> Vec<u8> {
     manteon::instruction::ProposeExternalEvent {
         nonce: 0,
+        mode: manteon::ProposalMode::Bonded,
         data: EventResult {
             extra: None,
             occurred_at: 1_800_000_000,
@@ -88,6 +89,16 @@ fn anchor_004_malformed_candidate_cannot_reach_the_handler() {
     // Author nonce and shared timestamp precede the optional additional facts.
     wrong_tag[24] = 0xff;
     assert_malformed(wrong_tag, ErrorCode::InstructionDidNotDeserialize);
+
+    let mut invalid_mode = finalization();
+    *invalid_mode.last_mut().unwrap() = 2;
+    assert_malformed(invalid_mode, ErrorCode::InstructionDidNotDeserialize);
+
+    let mut missing_fee = finalization();
+    *missing_fee.last_mut().unwrap() = 1;
+    assert_malformed(missing_fee.clone(), ErrorCode::InstructionDidNotDeserialize);
+    missing_fee.extend_from_slice(&[0; 7]);
+    assert_malformed(missing_fee, ErrorCode::InstructionDidNotDeserialize);
 }
 
 #[test]

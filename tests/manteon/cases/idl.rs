@@ -103,6 +103,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         "propose_external_event",
         manteon::instruction::ProposeExternalEvent {
             nonce: 0,
+            mode: manteon::ProposalMode::Bonded,
             data: manteon::state::EventResult {
                 extra: None,
                 occurred_at: 1_800_000_000,

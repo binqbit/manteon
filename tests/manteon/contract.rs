@@ -18,6 +18,8 @@ mod config;
 mod config_usage;
 #[path = "cases/custody.rs"]
 mod custody;
+#[path = "cases/direct_audit.rs"]
+mod direct_audit;
 #[path = "cases/encoding.rs"]
 mod encoding;
 #[path = "cases/fallback.rs"]

@@ -19,7 +19,8 @@ are authored conditions, not separate contract branches. Insufficient evidence
 can produce an Unknown review answer.
 
 A proposer supplies occurrence facts and funds a fresh Tekmerion review with a
-separate USDC author bond. Manteon checks the event identity, a nonfuture time,
+separate USDC author bond, or pays the audit fee directly once public proposals
+are available. Manteon checks the event identity, a nonfuture time,
 the supported calendar range and, for a competitive result, the allowed date
 domain. It generates a canonical result commitment bound to the pool and its
 agreement. It does not fetch websites or establish the external facts.
@@ -39,6 +40,14 @@ challenge under those locked terms:
 See [Tekmerion's process](../vendor/tekmerion/docs/how-it-works.md) for review
 funding, voting, fees and withdrawals.
 
+Once public proposals are available, an author can instead create a **direct
+audit** Case. The author pays the policy's audit fee, with no author bond or
+challenge-funding window. Auditors start reviewing immediately under the same
+locked policy and deadline duration. This Case cannot receive optimistic Yes:
+it needs the normal signed quorum. Yes, No and Unknown each pay the auditor fee;
+a technical timeout returns the fee to its author. An existing bonded Case
+cannot be converted to this mode.
+
 Manteon accepts the first authenticated, finalized Yes successfully applied to
 the pool, whether optimistic or audited. Any wallet can apply it. That single
 transaction fixes the accepted Case and occurrence facts and freezes prediction
@@ -54,7 +63,8 @@ resolve their Cases concurrently. A pending or repeatedly rejected proposal
 therefore cannot monopolize the market once public submission is available.
 
 An audited No, audited Unknown or technical failure allows that author to
-retry with a fresh bond. All Cases keep their own funding, audit deadlines and
+retry with a new bonded proposal or, when public access is open, a fresh paid
+audit. All Cases keep their own funding, audit deadlines and
 claims. When one Yes is applied, new Cases are disabled, while existing Cases
 finish their own review and withdrawals without changing the accepted market
 result. A latest-completed Case displayed by an application is informational;

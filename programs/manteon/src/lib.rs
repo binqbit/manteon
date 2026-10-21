@@ -26,7 +26,7 @@ pub use instructions::{
     pool::complete_pool::CompletePool,
     pool::{activate_pool::ActivatePool, create_pool::CreatePool},
     price_threshold::{ActivatePricePool, PriceThresholdPool},
-    propose_external_event::ProposeExternalEvent,
+    propose_external_event::{ProposalMode, ProposeExternalEvent},
     settlement::{
         begin_settlement::BeginSettlement, finalize_settlement::FinalizeSettlement,
         process_positions::ProcessPositions,
@@ -206,8 +206,9 @@ pub mod manteon {
         ctx: Context<'info, ProposeExternalEvent<'info>>,
         nonce: u64,
         data: EventResult,
+        mode: ProposalMode,
     ) -> Result<()> {
-        instructions::propose_external_event::handle(ctx, nonce, data)
+        instructions::propose_external_event::handle(ctx, nonce, data, mode)
     }
 
     /// Consume authenticated Yes and freeze atomically; pre-LOCK events authorize refunds.

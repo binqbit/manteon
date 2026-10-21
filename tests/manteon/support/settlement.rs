@@ -74,7 +74,12 @@ impl CaseFixture {
                 system_program: anchor_lang::system_program::ID,
             }
             .to_account_metas(None),
-            data: manteon::instruction::ProposeExternalEvent { nonce, data }.data(),
+            data: manteon::instruction::ProposeExternalEvent {
+                nonce,
+                data,
+                mode: manteon::ProposalMode::Bonded,
+            }
+            .data(),
         };
         (
             Self {

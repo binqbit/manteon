@@ -46,6 +46,8 @@ that closing or changing a recipient account cannot bind a winner's claim to
 that address; a replacement can be created and paid atomically.
 
 External event tests verify time validation and authenticated review outcomes.
+Direct paid-audit scenarios cover public admission, immediate audit startup,
+fee-only custody, technical-timeout refunds and immutable first-Yes acceptance.
 Occurrence facts remain an evidence-review responsibility. Price tests cover both
 crossing directions, supported USD conversions, stale or substituted sources,
 failed confirmations and expiry refunds.

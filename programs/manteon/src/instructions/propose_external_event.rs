@@ -2,7 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use tekmerion_sdk::{
     cpi,
-    program::{program::Tekmerion, CasePhase, CaseResult, CompletionMethod, Policy},
+    program::{
+        program::Tekmerion, CaseFunding, CaseMode, CasePhase, CaseResult, CompletionMethod, Policy,
+    },
 };
 
 use crate::{
@@ -11,6 +13,13 @@ use crate::{
     state::{Config, Event, EventResult, Pool, PoolState},
     validation::admission,
 };
+
+/// Bonded challenge review or an author-paid audit available after public opening.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProposalMode {
+    Bonded,
+    DirectAudit { expected_audit_fee: u64 },
+}
 
 #[derive(Accounts)]
 pub struct ProposeExternalEvent<'info> {
@@ -49,7 +58,7 @@ pub struct ProposeExternalEvent<'info> {
     /// CHECK: optional finalized service failure authenticated below to open competition.
     pub access_case: Option<UncheckedAccount<'info>>,
 
-    // Author funding.
+    // Author funding: a refundable bond or the direct audit fee.
     #[account(
         mut,
         token::mint = bond_mint,
@@ -66,7 +75,7 @@ pub struct ProposeExternalEvent<'info> {
     pub author_receipt: UncheckedAccount<'info>,
 
     // Audit custody.
-    /// CHECK: Tekmerion creates and authenticates its own bond vault.
+    /// CHECK: Tekmerion creates and authenticates its own review vault.
     #[account(mut)]
     pub case_vault: UncheckedAccount<'info>,
     #[account(address = tekmerion_sdk::USDC_MINT)]
@@ -82,6 +91,7 @@ pub(crate) fn handle<'info>(
     ctx: Context<'info, ProposeExternalEvent<'info>>,
     nonce: u64,
     data: EventResult,
+    mode: ProposalMode,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
     require!(
@@ -128,6 +138,10 @@ pub(crate) fn handle<'info>(
         now,
         service_failed,
     )?;
+    require!(
+        mode == ProposalMode::Bonded || public_proposals,
+        ManteonError::ServiceWindow
+    );
 
     // Authenticate the Policy and completed predecessor before funding a new attempt.
     let policy = tekmerion::policy(&ctx.accounts.policy)?;
@@ -150,6 +164,7 @@ pub(crate) fn handle<'info>(
         &policy,
         nonce,
         result_hash,
+        mode,
         ctx.bumps.client_authority,
         ctx.remaining_accounts,
     )?;
@@ -208,6 +223,7 @@ impl<'info> ProposeExternalEvent<'info> {
         policy: &Policy,
         nonce: u64,
         result_hash: [u8; 32],
+        mode: ProposalMode,
         client_bump: u8,
         previous: &[AccountInfo<'info>],
     ) -> Result<()> {
@@ -237,12 +253,41 @@ impl<'info> ProposeExternalEvent<'info> {
         cpi::create_case(
             context,
             nonce,
-            policy.rules.author_bond,
+            match mode {
+                ProposalMode::Bonded => CaseFunding::Bonded {
+                    principal: policy.rules.author_bond,
+                },
+                ProposalMode::DirectAudit { expected_audit_fee } => CaseFunding::DirectAudit {
+                    expected_fee: expected_audit_fee,
+                },
+            },
             self.pool.agreement_hash,
             result_hash,
         )?;
 
         let created = tekmerion::case(&self.case)?;
+        let funding_matches = match mode {
+            ProposalMode::Bonded => {
+                created.mode == CaseMode::Challenge
+                    && created.author_principal == policy.rules.author_bond
+                    && created.challenge_target == policy.rules.challenge_target
+                    && created.phase() == CasePhase::Funding
+                    && created.audit.deadline.is_none()
+            }
+            ProposalMode::DirectAudit { expected_audit_fee } => {
+                created.mode == CaseMode::DirectAudit
+                    && expected_audit_fee == policy.rules.audit_fee
+                    && created.author_principal == expected_audit_fee
+                    && created.challenge_target == 0
+                    && created.phase() == CasePhase::Funded
+                    && created.funding_deadline == Clock::get()?.unix_timestamp
+                    && created.audit.deadline.is_some()
+                    && created.audit.deadline
+                        == i64::try_from(policy.rules.audit_timeout)
+                            .ok()
+                            .and_then(|timeout| created.funding_deadline.checked_add(timeout))
+            }
+        };
         require!(
             created.policy == policy_key
                 && created.subject == self.pool.key()
@@ -251,8 +296,10 @@ impl<'info> ProposeExternalEvent<'info> {
                 && created.previous_case == previous.first().map(|account| account.key())
                 && created.agreement_hash == self.pool.agreement_hash
                 && created.result_hash == result_hash
-                && created.author_principal == policy.rules.author_bond
-                && created.phase() == CasePhase::Funding
+                && funding_matches
+                && created.challenge_principal == 0
+                && created.audit.votes.is_empty()
+                && created.audit.response.is_none()
                 && created.result().is_none()
                 && created.completion_method().is_none()
                 && created.finalized_at.is_none(),

@@ -58,6 +58,9 @@ actually occurred and deposits a separate review bond. IPO is one possible Agree
 time to fund a challenge. An underfunded challenge can accept the report
 optimistically; a fully funded challenge requires agreement among the appointed
 auditors. External evidence and the committed agreement define the question.
+After public proposals open, an author may pay the audit fee directly to start
+review immediately without posting a bond. This path always requires an audit;
+the fee is returned only if the review times out without a decision.
 
 **Token price threshold crossing.** Any wallet can submit the fixed price
 sources. Manteon requires both an interval average and the current spot price

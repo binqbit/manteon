@@ -36,81 +36,98 @@ fn replace_account(
 
 #[test]
 fn candidate_submission_authenticates_author_asset_client_and_auditor_before_creating_a_case() {
-    let mut context = TestContext::new();
-    let alice = context.alice.insecure_clone();
-    let bob = context.bob.insecure_clone();
-    let bob_source = token::create_account(
-        &mut context.svm,
-        &context.payer,
-        0xdc,
-        address(AUDIT_MINT),
-        bob.pubkey(),
-        100,
-    );
-    context.activate();
-    let mut result = ResultFixture::new(&context);
-    context.set_time(FORECAST * DAY);
-    result.record_time(&context);
-    let (case, valid) = CaseFixture::instruction(&context, &result);
-
-    for (account, replacement, error) in [
+    for (mode, expected_payment) in [
+        (manteon::ProposalMode::Bonded, 100),
         (
-            pubkey(context.audit_source),
-            pubkey(context.alice_token),
-            ErrorCode::ConstraintTokenMint,
-        ),
-        (
-            pubkey(context.audit_source),
-            pubkey(bob_source),
-            ErrorCode::ConstraintTokenOwner,
-        ),
-        (
-            context.client_authority,
-            pubkey(context.service.pubkey()),
-            ErrorCode::ConstraintSeeds,
-        ),
-        (tekmerion_sdk::ID, manteon::ID, ErrorCode::InvalidProgramId),
-        (
-            case.identity.receipt(&pubkey(alice.pubkey())),
-            case.identity.receipt(&pubkey(bob.pubkey())),
-            ErrorCode::ConstraintSeeds,
+            manteon::ProposalMode::DirectAudit {
+                expected_audit_fee: 7,
+            },
+            7,
         ),
     ] {
-        let mut invalid = valid.clone();
-        replace_account(&mut invalid, account, replacement);
-        context.reject(&[invalid], &[&alice], custom(error));
+        let mut context = TestContext::new();
+        let alice = context.alice.insecure_clone();
+        let bob = context.bob.insecure_clone();
+        let bob_source = token::create_account(
+            &mut context.svm,
+            &context.payer,
+            0xdc,
+            address(AUDIT_MINT),
+            bob.pubkey(),
+            100,
+        );
+        context.activate();
+        let mut result = ResultFixture::new(&context);
+        context.set_time(FORECAST * DAY);
+        result.record_time(&context);
+        let (case, mut valid) = CaseFixture::instruction(&context, &result);
+        valid.data = manteon::instruction::ProposeExternalEvent {
+            nonce: case.identity.nonce,
+            data: case.result,
+            mode,
+        }
+        .data();
+
+        for (account, replacement, error) in [
+            (
+                pubkey(context.audit_source),
+                pubkey(context.alice_token),
+                ErrorCode::ConstraintTokenMint,
+            ),
+            (
+                pubkey(context.audit_source),
+                pubkey(bob_source),
+                ErrorCode::ConstraintTokenOwner,
+            ),
+            (
+                context.client_authority,
+                pubkey(context.service.pubkey()),
+                ErrorCode::ConstraintSeeds,
+            ),
+            (tekmerion_sdk::ID, manteon::ID, ErrorCode::InvalidProgramId),
+            (
+                case.identity.receipt(&pubkey(alice.pubkey())),
+                case.identity.receipt(&pubkey(bob.pubkey())),
+                ErrorCode::ConstraintSeeds,
+            ),
+        ] {
+            let mut invalid = valid.clone();
+            replace_account(&mut invalid, account, replacement);
+            context.reject(&[invalid], &[&alice], custom(error));
+        }
+        let mut unsigned = valid.clone();
+        unsigned
+            .accounts
+            .iter_mut()
+            .find(|meta| meta.pubkey == alice.pubkey())
+            .unwrap()
+            .is_signer = false;
+        context.reject(&[unsigned], &[], custom(ErrorCode::AccountNotSigner));
+        let mut mismatched_candidate = valid.clone();
+        mismatched_candidate.data = manteon::instruction::ProposeExternalEvent {
+            nonce: 0,
+            mode,
+            data: manteon::state::EventResult {
+                extra: Some(manteon::state::EventResultExtra::PriceVerification {
+                    lower_usd_e9: 2_000_000_000,
+                    upper_usd_e9: 2_000_000_001,
+                }),
+                occurred_at: 1_800_000_000,
+            },
+        }
+        .data();
+        context.reject(
+            &[mismatched_candidate],
+            &[&alice],
+            custom(ManteonError::InvalidEventResult),
+        );
+        assert_eq!(context.pool_state().accepted_case, None);
+        assert_eq!(context.policy_uses(), 1);
+        assert!(context.svm.get_account(&address(case.key)).is_none());
+        context.send(&[valid], &[&alice]);
+        assert_eq!(case_state(&context, &case).author, pubkey(alice.pubkey()));
+        assert_eq!(context.token_balance(address(case.vault)), expected_payment);
     }
-    let mut unsigned = valid.clone();
-    unsigned
-        .accounts
-        .iter_mut()
-        .find(|meta| meta.pubkey == alice.pubkey())
-        .unwrap()
-        .is_signer = false;
-    context.reject(&[unsigned], &[], custom(ErrorCode::AccountNotSigner));
-    let mut mismatched_candidate = valid.clone();
-    mismatched_candidate.data = manteon::instruction::ProposeExternalEvent {
-        nonce: 0,
-        data: manteon::state::EventResult {
-            extra: Some(manteon::state::EventResultExtra::PriceVerification {
-                lower_usd_e9: 2_000_000_000,
-                upper_usd_e9: 2_000_000_001,
-            }),
-            occurred_at: 1_800_000_000,
-        },
-    }
-    .data();
-    context.reject(
-        &[mismatched_candidate],
-        &[&alice],
-        custom(ManteonError::InvalidEventResult),
-    );
-    assert_eq!(context.pool_state().accepted_case, None);
-    assert_eq!(context.policy_uses(), 1);
-    assert!(context.svm.get_account(&address(case.key)).is_none());
-    context.send(&[valid], &[&alice]);
-    assert_eq!(case_state(&context, &case).author, pubkey(alice.pubkey()));
-    assert_eq!(context.token_balance(address(case.vault)), 100);
 }
 
 #[test]

@@ -53,7 +53,12 @@ fn external_result_is_typed_past_bounded_and_never_funds_invalid_facts() {
         },
     ] {
         let mut instruction = valid.clone();
-        instruction.data = manteon::instruction::ProposeExternalEvent { nonce: 0, data }.data();
+        instruction.data = manteon::instruction::ProposeExternalEvent {
+            nonce: 0,
+            data,
+            mode: manteon::ProposalMode::Bonded,
+        }
+        .data();
         context.reject(
             &[instruction],
             &[&alice],
@@ -84,7 +89,12 @@ fn external_event_settles_the_audited_occurrence_time_and_binds_both_documents()
             extra: None,
             occurred_at: FORECAST * DAY,
         };
-        instruction.data = manteon::instruction::ProposeExternalEvent { nonce: 0, data }.data();
+        instruction.data = manteon::instruction::ProposeExternalEvent {
+            nonce: 0,
+            data,
+            mode: manteon::ProposalMode::Bonded,
+        }
+        .data();
         case.result = data;
 
         let metadata = context.send(&[instruction], &[&alice]);
