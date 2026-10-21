@@ -235,7 +235,16 @@ fn validate_event_state(pool: &Pool, event: &Event) -> core::result::Result<(), 
                 if pool.accepted_case.is_some()
                     && pool.service_eligible_at.is_some_and(|at| at >= 0)
                     && ((result.occurred_at < pool.lock_at)
-                        == (pool.state == PoolState::Refunding)) => {}
+                        == (pool.state == PoolState::Refunding)) =>
+            {
+                if result.occurred_at >= pool.lock_at
+                    && manteon_core::math::utc_day::utc_day(result.occurred_at)
+                        > manteon_core::math::utc_day::utc_day(pool.lock_at)
+                            + pool.algorithm.max_error_days()
+                {
+                    return Err(ReadError::InvalidAccounting);
+                }
+            }
             _ => return Err(ReadError::InvalidAccounting),
         },
     }

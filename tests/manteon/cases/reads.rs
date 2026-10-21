@@ -343,6 +343,42 @@ fn anchor_015_reader_rejects_decodable_but_inconsistent_snapshot_state() {
 }
 
 #[test]
+fn external_result_reader_enforces_the_contracts_competitive_date_domain() {
+    use super::support::{DAY, FORECAST, result::ResultFixture, settlement::CaseFixture};
+
+    let mut context = TestContext::new();
+    let service = context.service.insecure_clone();
+    context.activate();
+    context.set_time(FORECAST * DAY);
+    let result = ResultFixture::new(&context);
+    let case = CaseFixture::start(&mut context, &result);
+    case.finalize_yes(&mut context);
+    context.send(&[case.begin_ix(&context, &service)], &[&service]);
+    let base = market_snapshot(&context);
+    let pool = context.pool_state();
+    let last_day =
+        manteon_core::math::utc_day::utc_day(pool.lock_at) + pool.algorithm.max_error_days();
+
+    // The last admissible UTC day remains valid, including its final second.
+    // Going one second further would let admitted forecasts underflow to zero;
+    // neither proposal nor acceptance can produce that on-chain state.
+    for (at, valid) in [
+        ((last_day + 1) * DAY - 1, true),
+        ((last_day + 1) * DAY, false),
+    ] {
+        let mut changed = base.clone();
+        let mut event = context.event_state();
+        event.result.as_mut().unwrap().occurred_at = at;
+        write(&mut changed[2].1, &event);
+        if valid {
+            assert!(read(&mut changed).is_ok());
+        } else {
+            assert_eq!(read(&mut changed).err(), Some(ReadError::InvalidAccounting));
+        }
+    }
+}
+
+#[test]
 fn price_monitor_reader_authenticates_its_account_and_lifecycle_separately() {
     let mut context = TestContext::with_price_threshold(Sources::rule(CrossingDirection::Up));
     let pool_key = pubkey(context.pool.pubkey());
