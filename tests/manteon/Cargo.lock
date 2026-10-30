@@ -1760,6 +1760,7 @@ dependencies = [
  "anchor-spl",
  "manteon-core",
  "solana-sha256-hasher",
+ "tekmerion-chainlink-auditor",
  "tekmerion-sdk",
 ]
 
@@ -1780,11 +1781,14 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bincode",
+ "k256",
  "litesvm",
  "manteon",
  "manteon-client",
  "manteon-core",
  "serde_json",
+ "sha2 0.10.9",
+ "sha3",
  "solana-account",
  "solana-address 2.6.1",
  "solana-instruction",
@@ -1796,6 +1800,7 @@ dependencies = [
  "solana-system-interface 3.2.0",
  "solana-transaction",
  "solana-transaction-error",
+ "tekmerion-chainlink-sdk",
  "tekmerion-sdk",
  "wincode",
 ]
@@ -4282,6 +4287,26 @@ version = "1.2.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+]
+
+[[package]]
+name = "tekmerion-chainlink-auditor"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "solana-sha256-hasher",
+ "tekmerion-sdk",
+]
+
+[[package]]
+name = "tekmerion-chainlink-sdk"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "solana-instruction",
+ "tekmerion-chainlink-auditor",
+ "tekmerion-sdk",
 ]
 
 [[package]]

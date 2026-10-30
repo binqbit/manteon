@@ -107,21 +107,42 @@ done
 
 # Program builds.
 # Keep the auditor's deployable SBF build separate from its CPI library.
-for program in manteon tekmerion; do
+for program in manteon tekmerion chainlink-auditor; do
+  package="$program"
   manifest="$program_dir/Cargo.toml"
   sbf_target="$output_dir/anchor-sbf"
   if [[ "$program" == tekmerion ]]; then
     manifest="$auditor_dir/programs/tekmerion/Cargo.toml"
     sbf_target="$output_dir/tekmerion-sbf"
   fi
+  if [[ "$program" == chainlink-auditor ]]; then
+    manifest="$auditor_dir/programs/chainlink-auditor/Cargo.toml"
+    sbf_target="$output_dir/chainlink-sbf"
+    package="tekmerion-chainlink-auditor"
+  fi
   build_log="$output_dir/$program-sbf-build.log"
   CARGO_TERM_COLOR=never CARGO_TARGET_DIR="$sbf_target" \
     with_program_cargo cargo-build-sbf --manifest-path "$manifest" \
     --sbf-out-dir "$output_dir/deploy" --tools-version v1.53 --arch v0 \
-    --offline --skip-tools-install --jobs "$CARGO_BUILD_JOBS" -- --package "$program" --locked \
+    --offline --skip-tools-install --jobs "$CARGO_BUILD_JOBS" -- --package "$package" --locked \
     2>&1 | tee "$build_log"
   bash "$project_root/scripts/check-sbf-log.sh" "$build_log"
 done
+
+# Test-only upstream forwarder; source provenance is verified before compiling.
+python3 "$auditor_dir/scripts/verify-chainlink-source.py"
+forwarder_manifest="$auditor_dir/tests/third-party/chainlink-solana/contracts/programs/keystone-forwarder/Cargo.toml"
+if "$restore"; then
+  CARGO_NET_OFFLINE=false cargo_for "$program_toolchain" "$output_dir/anchor-fetch" fetch --locked --manifest-path "$forwarder_manifest"
+fi
+CARGO_TERM_COLOR=never CARGO_TARGET_DIR="$output_dir/chainlink-forwarder-sbf" \
+  with_program_cargo cargo-build-sbf --manifest-path "$forwarder_manifest" \
+  --sbf-out-dir "$output_dir/deploy" --tools-version v1.53 --arch v0 \
+  --offline --skip-tools-install --jobs "$CARGO_BUILD_JOBS" -- --locked \
+  2>&1 | tee "$output_dir/chainlink-forwarder-sbf.log"
+bash "$project_root/scripts/check-sbf-log.sh" "$output_dir/chainlink-forwarder-sbf.log"
+export CHAINLINK_ADAPTER_SO="$output_dir/deploy/chainlink_auditor.so"
+export CHAINLINK_FORWARDER_SO="$output_dir/deploy/keystone_forwarder.so"
 
 # Generated IDL and published protocol compatibility.
 mkdir -p "$output_dir/idl" "$output_dir/types"
@@ -155,4 +176,21 @@ cargo_for "$program_toolchain" "$program_host_dir" test \
   --manifest-path "$program_dir/Cargo.toml" --workspace --locked --offline
 cargo_for "$runtime_toolchain" "$runtime_host_dir" test \
   --manifest-path "$runtime_dir/Cargo.toml" --locked --offline -- --test-threads=2
+
+# Explicit test-only adapter enrollment; never replace the production deploy artifact.
+confidential_dir="$output_dir/confidential-fixtures"
+mkdir -p "$confidential_dir"
+CARGO_TERM_COLOR=never CARGO_TARGET_DIR="$output_dir/chainlink-confidential-sbf" \
+  with_program_cargo cargo-build-sbf --manifest-path "$auditor_dir/programs/chainlink-auditor/Cargo.toml" \
+  --sbf-out-dir "$confidential_dir" --tools-version v1.53 --arch v0 \
+  --no-default-features --features mainnet,local-fixtures --offline --skip-tools-install --jobs "$CARGO_BUILD_JOBS" \
+  -- --package tekmerion-chainlink-auditor --locked > "$output_dir/chainlink-confidential-sbf.log" 2>&1
+bash "$project_root/scripts/check-sbf-log.sh" "$output_dir/chainlink-confidential-sbf.log"
+cargo_for "$runtime_toolchain" "$runtime_host_dir" clippy \
+  --manifest-path "$runtime_dir/Cargo.toml" --features local-fixtures \
+  --all-targets --locked --offline -- -D warnings
+CHAINLINK_ADAPTER_SO="$confidential_dir/chainlink_auditor.so" \
+  cargo_for "$runtime_toolchain" "$runtime_host_dir" test \
+  --manifest-path "$runtime_dir/Cargo.toml" --features local-fixtures --locked --offline \
+  --test contract chainlink -- --test-threads=2
 echo 'Manteon contract checks passed, including the pinned Tekmerion integration.'

@@ -90,3 +90,12 @@ rollback and duplicate-claim protection.
 These tests establish local contract behavior. Controlled external event evidence and
 price-source fixtures do not establish factual external event truth, live price-source
 availability, auditor independence or deployed program identity.
+
+The Anchor checks also compile the pinned Tekmerion Chainlink adapter and upstream
+Forwarder, then execute their real CPI integration in Manteon's local bank.
+`tests/manteon/cases/chainlink.rs` covers Yes/No/Unknown allocations, prediction
+custody, retry fees, settlement/claims and Ready-to-timeout behavior. The adapter
+uses Manteon's existing client authority and acceptance path; no separate
+settlement mechanism is introduced. Tekmerion's [developer guide](../vendor/tekmerion/docs/chainlink-integration.md)
+owns enrollment, workflow setup and fixture replay. These tests need no CRE
+tenant or model key; synthetic signatures do not establish a public deployment.

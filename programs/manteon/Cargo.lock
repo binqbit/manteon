@@ -841,6 +841,7 @@ dependencies = [
  "anchor-spl",
  "manteon-core",
  "solana-sha256-hasher",
+ "tekmerion-chainlink-auditor",
  "tekmerion-sdk",
 ]
 
@@ -2151,6 +2152,15 @@ version = "1.2.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+]
+
+[[package]]
+name = "tekmerion-chainlink-auditor"
+version = "1.0.0"
+dependencies = [
+ "anchor-lang",
+ "solana-sha256-hasher",
+ "tekmerion-sdk",
 ]
 
 [[package]]

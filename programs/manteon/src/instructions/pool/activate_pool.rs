@@ -77,6 +77,7 @@ pub(crate) fn handle(ctx: Context<ActivatePool>) -> Result<()> {
     // Retain the authenticated Policy before enabling participation.
     let policy = tekmerion::policy(&ctx.accounts.policy)?;
     let policy_key = ctx.accounts.policy.key();
+    crate::integration::chainlink::validate(policy_key, &policy, ctx.remaining_accounts)?;
     let bump = [ctx.bumps.client_authority];
     let seeds = [tekmerion::CLIENT_SEED, policy_key.as_ref(), bump.as_ref()];
     let signer_seeds = [&seeds[..]];

@@ -7,6 +7,9 @@ publish = false
 
 [workspace]
 
+[features]
+local-fixtures = ["tekmerion-chainlink-sdk/local-fixtures"]
+
 [[test]]
 name = "contract"
 path = "contract.rs"
@@ -15,12 +18,14 @@ path = "contract.rs"
 anchor-lang = { version = "=1.2.1", default-features = false, features = ["solana-v3"] }
 anchor-spl = { version = "=1.2.1", default-features = false, features = ["solana-v3", "token"] }
 bincode = "=1.3.3"
+k256 = { version = "=0.13.4", features = ["ecdsa"] }
 litesvm = "=0.16.0"
 manteon = { path = "../../programs/manteon", default-features = false, features = ["no-entrypoint"] }
 manteon-client = { path = "../../packages/client-rust" }
 manteon-core = { path = "../../packages/core" }
-tekmerion-sdk = { path = "../../vendor/tekmerion/sdk/rust", default-features = false, features = ["mainnet"] }
 serde_json = "=1.0.151"
+sha2 = "0.10"
+sha3 = "0.10"
 solana-account = "=4.3.2"
 solana-address = { version = "=2.6.1", features = ["curve25519", "sha2"] }
 solana-instruction = "=3.4.1"
@@ -32,6 +37,8 @@ solana-signer = "=3.0.1"
 solana-system-interface = { version = "=3.2.0", features = ["bincode"] }
 solana-transaction = "=4.1.6"
 solana-transaction-error = "=3.3.2"
+tekmerion-chainlink-sdk = { path = "../../vendor/tekmerion/sdk/chainlink-rust", default-features = false, features = ["mainnet"] }
+tekmerion-sdk = { path = "../../vendor/tekmerion/sdk/rust", default-features = false, features = ["mainnet"] }
 wincode = "=0.5.5"
 
 [profile.dev]

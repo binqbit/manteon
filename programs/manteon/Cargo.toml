@@ -18,8 +18,8 @@ name = "manteon"
 
 [features]
 default = ["strict-entrypoint", "mainnet"]
-mainnet = ["tekmerion-sdk/mainnet"]
-devnet = ["tekmerion-sdk/devnet"]
+mainnet = ["tekmerion-sdk/mainnet", "chainlink-auditor/mainnet"]
+devnet = ["tekmerion-sdk/devnet", "chainlink-auditor/devnet"]
 # Disposable local validator only; public builds keep the five-minute minimum.
 localnet = []
 # Validate complete instruction payloads, then invoke the generated Anchor entry.
@@ -28,7 +28,7 @@ no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
 anchor-debug = ["anchor-lang/anchor-debug"]
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "tekmerion-sdk/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "tekmerion-sdk/idl-build", "chainlink-auditor/idl-build"]
 
 [dependencies]
 anchor-lang = { version = "=1.2.1", default-features = false, features = ["solana-v3", "init-if-needed"] }
@@ -38,6 +38,7 @@ anchor-spl = { version = "=1.2.1", default-features = false, features = ["solana
 solana-sha256-hasher = "=3.1.0"
 manteon-core = { path = "../../packages/core" }
 tekmerion-sdk = { path = "../../vendor/tekmerion/sdk/rust", default-features = false, features = ["cpi"] }
+chainlink-auditor = { package = "tekmerion-chainlink-auditor", path = "../../vendor/tekmerion/programs/chainlink-auditor", default-features = false, features = ["no-entrypoint"] }
 
 [lints.rust]
 # Anchor emits undocumented sibling types that do not inherit item-level

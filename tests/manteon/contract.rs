@@ -48,3 +48,7 @@ mod retries;
 mod settlement;
 #[path = "cases/setup.rs"]
 mod setup;
+
+#[cfg(feature = "local-fixtures")]
+#[path = "cases/chainlink.rs"]
+mod chainlink;

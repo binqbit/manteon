@@ -15,7 +15,7 @@ use super::{
 
 impl TestContext {
     pub fn activate_ix(&self) -> Instruction {
-        Instruction {
+        let mut ix = Instruction {
             program_id: address(manteon::ID),
             accounts: manteon::accounts::ActivatePool {
                 service_authority: pubkey(self.service.pubkey()),
@@ -28,7 +28,13 @@ impl TestContext {
             }
             .to_account_metas(None),
             data: manteon::instruction::ActivatePool {}.data(),
-        }
+        };
+        ix.accounts
+            .push(solana_instruction::AccountMeta::new_readonly(
+                tekmerion_chainlink_sdk::confidential::ConfidentialProfile::address(&self.policy).0,
+                false,
+            ));
+        ix
     }
 
     pub fn stake_ix(&self, owner: &Keypair, source: Address, day: i64, amount: u64) -> Instruction {

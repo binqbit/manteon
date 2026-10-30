@@ -30,7 +30,7 @@ pub fn load_tekmerion(svm: &mut LiteSVM) {
     );
 }
 
-fn load_program(svm: &mut LiteSVM, id: Pubkey, variable: &str, default: &str) {
+pub fn load_program(svm: &mut LiteSVM, id: Pubkey, variable: &str, default: &str) {
     let artifact = std::env::var_os(variable)
         .map(PathBuf::from)
         .unwrap_or_else(|| root().join(default));
