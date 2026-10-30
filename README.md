@@ -19,15 +19,16 @@ to the first stable **1.0.0** release.
 
 ## Read the protocol
 
-| Guide                                      | What it explains                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------- |
-| [Concept](docs/concept.md)                 | What a funded date forecast means and how accuracy affects capital. |
-| [How it works](docs/how-it-works.md)       | Participation, event acceptance, settlement and lifecycle diagrams. |
-| [Protocol specification](docs/protocol.md) | Exact time boundaries, withdrawal rules and payout arithmetic.      |
-| [Event rules](docs/events.md)              | External event evidence review, price confirmation and source safeguards.      |
-| [Configuration](docs/configuration.md)     | Service and governance roles, fixed fees and reusable settings.     |
-| [Document commitments](docs/agreements.md) | How documents bind rules and results, and how to verify them.       |
-| [Build and checks](docs/build.md)          | Standalone build and test commands.                                 |
+| Guide                                      | What it explains                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| [Concept](docs/concept.md)                 | What a funded date forecast means and how accuracy affects capital.       |
+| [How it works](docs/how-it-works.md)       | Participation, event acceptance, settlement and lifecycle diagrams.       |
+| [Protocol specification](docs/protocol.md) | Exact time boundaries, withdrawal rules and payout arithmetic.            |
+| [Event rules](docs/events.md)              | External event evidence review, price confirmation and source safeguards. |
+| [Chainlink review](docs/chainlink.md)      | Automated auditor integration, fixed agreements and participant rights.   |
+| [Configuration](docs/configuration.md)     | Service and governance roles, fixed fees and reusable settings.           |
+| [Document commitments](docs/agreements.md) | How documents bind rules and results, and how to verify them.             |
+| [Build and checks](docs/build.md)          | Standalone build and test commands.                                       |
 
 ## Run checks
 

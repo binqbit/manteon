@@ -19,16 +19,20 @@ are authored conditions, not separate contract branches. Insufficient evidence
 can produce an Unknown review answer.
 
 A proposer supplies occurrence facts and funds a fresh Tekmerion review with a
-separate USDC author bond, or pays the audit fee directly once public proposals
-are available. Manteon checks the event identity, a nonfuture time,
+separate USDC author bond, or pays the audit fee directly when eligible. For a
+policy requiring immediate audit, the service pays for its first audit at
+submission; other authors must wait until public proposals are available.
+The same Policy rule applies to Chainlink and other auditor committees.
+Manteon checks the event identity, a nonfuture time,
 the supported calendar range and, for a competitive result, the allowed date
 domain. It generates a canonical result commitment bound to the pool and its
 agreement. It does not fetch websites or establish the external facts.
 
 ### Review and acceptance
 
-The pool retains its review policy when activated. Challengers may fund a
-challenge under those locked terms:
+The pool retains its review policy when activated. That policy fixes whether
+every new Case requires an immediate direct audit or whether bonded challenges
+are allowed. Under a dispute policy, challengers may fund a challenge:
 
 - An underfunded challenge can close with **optimistic Yes** after its funding
   window. Auditors have not verified the report in this path.
@@ -41,7 +45,10 @@ See [Tekmerion's process](../vendor/tekmerion/docs/how-it-works.md) for review
 funding, voting, fees and withdrawals.
 
 Once public proposals are available, an author can instead create a **direct
-audit** Case. The author pays the policy's audit fee, with no author bond or
+audit** Case. The service can also use this mode before public opening when the
+Policy requires immediate auditing, including its first proposal.
+This exception does not open submissions to other authors. The author pays the
+policy's audit fee, with no author bond or
 challenge-funding window. Auditors start reviewing immediately under the same
 locked policy and deadline duration. This Case cannot receive optimistic Yes:
 it needs the normal signed quorum. Yes, No and Unknown each pay the auditor fee;
@@ -63,17 +70,27 @@ resolve their Cases concurrently. A pending or repeatedly rejected proposal
 therefore cannot monopolize the market once public submission is available.
 
 An audited No, audited Unknown or technical failure allows that author to
-retry with a new bonded proposal or, when public access is open, a fresh paid
-audit. All Cases keep their own funding, audit deadlines and
+retry with a new bonded proposal or a fresh paid audit when eligible. For a
+policy requiring immediate review the service remains eligible for direct audit; other authors
+need public access. All Cases keep their own funding, audit deadlines and
 claims. When one Yes is applied, new Cases are disabled, while existing Cases
 finish their own review and withdrawals without changing the accepted market
 result. A latest-completed Case displayed by an application is informational;
 it has no authority to replace the accepted Case.
 
+### Automated external-event auditor
+
+[Chainlink review](chainlink.md) is the optional integration for
+automated external-event appeals. A market can appoint this AI-assisted auditor through
+Tekmerion under the same challenge, acceptance and payment rules. The guide
+explains the implemented flow, how the agreement constrains review and the
+qualification required before public enrollment.
+
 ### Occurrence time and access windows
 
 The service has the initial proposal opportunity while the pool is Active.
-Other authors can challenge that proposal. Public proposals become available
+Other authors can challenge a bonded proposal; an immediately paid audit already
+requires the auditor's decision. Public proposals become available
 when either of these conditions holds:
 
 - A service-authored Case ends in audited No, audited Unknown or technical

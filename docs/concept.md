@@ -59,7 +59,10 @@ time to fund a challenge. An underfunded challenge can accept the report
 optimistically; a fully funded challenge requires agreement among the appointed
 auditors. External evidence and the committed agreement define the question.
 After public proposals open, an author may pay the audit fee directly to start
-review immediately without posting a bond. This path always requires an audit;
+review immediately without posting a bond. When the fixed policy requires
+immediate audit, this is the only method and the service uses it from its first
+proposal. Dispute policies retain bonded challenges. Other authors retain
+the normal public-opening rules. This path always requires an audit;
 the fee is returned only if the review times out without a decision.
 
 **Token price threshold crossing.** Any wallet can submit the fixed price

@@ -29,6 +29,11 @@ immutable. Editing display metadata or an archive cannot change them. Revised
 terms require a new pool. Identical document bytes can be used in independent
 pools; the pool identities still distinguish their capital and review attempts.
 
+For automated external-event review, follow Tekmerion's
+[agreement-writing guidance](../vendor/tekmerion/docs/chainlink.md#write-rules-an-auditor-can-apply).
+It explains how to fix the subject, permitted evidence links, date convention
+and uncertainty rules for the [Chainlink auditor](chainlink.md).
+
 ## Canonical result
 
 Manteon renders an external event result from typed occurrence facts instead of accepting
