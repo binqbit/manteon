@@ -3,7 +3,8 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 use tekmerion_sdk::{
     cpi,
     program::{
-        program::Tekmerion, CaseFunding, CaseMode, CasePhase, CaseResult, CompletionMethod, Policy,
+        program::Tekmerion, AuditTrigger, CaseFunding, CaseMode, CasePhase, CaseResult,
+        CompletionMethod, Policy,
     },
 };
 
@@ -14,7 +15,7 @@ use crate::{
     validation::admission,
 };
 
-/// Bonded challenge review or an author-paid audit available after public opening.
+/// Policy-required immediate audits are available to the service before public opening.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProposalMode {
     Bonded,
@@ -138,14 +139,18 @@ pub(crate) fn handle<'info>(
         now,
         service_failed,
     )?;
-    require!(
-        mode == ProposalMode::Bonded || public_proposals,
-        ManteonError::ServiceWindow
-    );
-
     // Authenticate the Policy and completed predecessor before funding a new attempt.
     let policy = tekmerion::policy(&ctx.accounts.policy)?;
     require!(policy.active_uses > 0, ManteonError::InvalidAuditAccount);
+    // Activation retained this Policy. Its trigger determines whether the service
+    // starts with a paid audit; other authors still wait for public admission.
+    let immediate_service_audit = ctx.accounts.author.key()
+        == ctx.accounts.config.service_authority
+        && policy.rules.audit_trigger == AuditTrigger::OnCreation;
+    require!(
+        mode == ProposalMode::Bonded || public_proposals || immediate_service_audit,
+        ManteonError::ServiceWindow
+    );
     validate_previous_case(
         pool,
         ctx.accounts.author.key(),

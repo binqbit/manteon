@@ -181,6 +181,7 @@ impl TestContext {
                 audit_fee: 7,
                 funding_duration: 60,
                 audit_timeout: 300,
+                audit_trigger: tekmerion_sdk::program::AuditTrigger::OnDispute,
             },
         });
         transactions::send(

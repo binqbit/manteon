@@ -230,7 +230,7 @@ fn direct_fee_is_refunded_only_on_technical_timeout_and_retry_keeps_its_own_cust
 }
 
 #[test]
-fn direct_proposals_require_public_opening_even_when_the_service_pays() {
+fn ordinary_committee_direct_proposals_require_public_opening_even_when_service_pays() {
     let horizon = OPEN + 100 * DAY;
     let public_at = horizon - 30 * DAY;
     for service_pays in [false, true] {

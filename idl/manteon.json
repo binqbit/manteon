@@ -2059,7 +2059,7 @@
     {
       "name": "ProposalMode",
       "docs": [
-        "Bonded challenge review or an author-paid audit available after public opening."
+        "Policy-required immediate audits are available to the service before public opening."
       ],
       "type": {
         "kind": "enum",
