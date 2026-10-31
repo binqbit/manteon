@@ -5,10 +5,10 @@ Tekmerion, a market can appoint an AI-assisted auditor running on Chainlink
 instead of a human committee. The question stays the same: **does the proposed
 event result satisfy this market's original agreement?**
 
-The integration is implemented for local testing. Public enrollment remains
-closed until a live confidential deployment is qualified. This guide describes
-the implemented review and acceptance rules; it does not announce an active
-public service.
+The integration includes local tests. Each review setup fixes its delivery
+channel before use; its operator and execution guarantees must be verified
+before participants rely on it. This guide describes the implemented review
+and acceptance rules; it does not announce an active public service.
 
 ## How it fits a market
 

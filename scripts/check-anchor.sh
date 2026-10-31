@@ -177,19 +177,11 @@ cargo_for "$program_toolchain" "$program_host_dir" test \
 cargo_for "$runtime_toolchain" "$runtime_host_dir" test \
   --manifest-path "$runtime_dir/Cargo.toml" --locked --offline -- --test-threads=2
 
-# Explicit test-only adapter enrollment; never replace the production deploy artifact.
-confidential_dir="$output_dir/confidential-fixtures"
-mkdir -p "$confidential_dir"
-CARGO_TERM_COLOR=never CARGO_TARGET_DIR="$output_dir/chainlink-confidential-sbf" \
-  with_program_cargo cargo-build-sbf --manifest-path "$auditor_dir/programs/chainlink-auditor/Cargo.toml" \
-  --sbf-out-dir "$confidential_dir" --tools-version v1.53 --arch v0 \
-  --no-default-features --features mainnet,local-fixtures --offline --skip-tools-install --jobs "$CARGO_BUILD_JOBS" \
-  -- --package tekmerion-chainlink-auditor --locked > "$output_dir/chainlink-confidential-sbf.log" 2>&1
-bash "$project_root/scripts/check-sbf-log.sh" "$output_dir/chainlink-confidential-sbf.log"
+# Local oracle fixtures use the same Auditor build as the other contract tests.
 cargo_for "$runtime_toolchain" "$runtime_host_dir" clippy \
   --manifest-path "$runtime_dir/Cargo.toml" --features local-fixtures \
   --all-targets --locked --offline -- -D warnings
-CHAINLINK_ADAPTER_SO="$confidential_dir/chainlink_auditor.so" \
+CHAINLINK_ADAPTER_SO="$output_dir/deploy/chainlink_auditor.so" \
   cargo_for "$runtime_toolchain" "$runtime_host_dir" test \
   --manifest-path "$runtime_dir/Cargo.toml" --features local-fixtures --locked --offline \
   --test contract chainlink -- --test-threads=2

@@ -84,7 +84,7 @@ it has no authority to replace the accepted Case.
 automated external-event appeals. A market can appoint this AI-assisted auditor through
 Tekmerion under the same challenge, acceptance and payment rules. The guide
 explains the implemented flow, how the agreement constrains review and the
-qualification required before public enrollment.
+trust checks needed before relying on a live setup.
 
 ### Occurrence time and access windows
 
