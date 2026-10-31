@@ -184,7 +184,7 @@ impl Transport {
             raw.extend(self.config.workflow_id);
             raw.extend([0x33; 10]);
             raw.extend([0x22; 20]);
-            raw.extend(sdk::payload::report_id(report.prefix.stage).unwrap());
+            raw.extend([0, if report.prefix.stage == 0 { 2 } else { 3 }]);
             raw.extend(sha(&receiver
                 .iter()
                 .flat_map(|m| m.pubkey.to_bytes())
@@ -516,7 +516,7 @@ fn confidential_chainlink_claim_failure_retry_verdict_and_market_settlement() {
                 },
                 body,
             };
-            let report_id = sdk::payload::report_id(report.prefix.stage).unwrap();
+            let report_id = [0, if report.prefix.stage == 0 { 2 } else { 3 }];
             let receiver = sdk::receiver_accounts(case.identity, config);
             let mut raw = vec![1];
             raw.extend(execution_id);
