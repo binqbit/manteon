@@ -1,3 +1,4 @@
+use crate::support::baseline_weight;
 use anchor_lang::AccountDeserialize;
 use manteon::{
     error::ManteonError,
@@ -152,7 +153,7 @@ fn settlement_public_handoff_uses_finality_time_even_after_delayed_partial_servi
             (pool.principal, pool.payout_remaining, pool.processed_dates),
             (200, 200, 2)
         );
-        assert_eq!(pool.total_weight, 150_u128 << 64);
+        assert_eq!(baseline_weight(&pool), 150_u128 << 64);
         assert_eq!(
             context.svm.get_account(&address(case.key)).unwrap(),
             original_case

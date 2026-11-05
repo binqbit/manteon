@@ -1,8 +1,8 @@
 # Manteon concept
 
 Manteon lets people put capital behind a forecast of an event's date. A pool
-brings those forecasts together and rewards a combination of **capital committed
-and closeness to the accepted event date**.
+brings those forecasts together and rewards a combination of **capital committed,
+closeness to the accepted event date, and optional early commitment**.
 
 An analyst might forecast when a company will complete an IPO. A token holder
 might forecast when a fixed market price will cross a target. In each case,
@@ -11,7 +11,7 @@ participants answer a timing question by choosing a UTC calendar date.
 ## What participants agree to
 
 Before participation begins, each pool fixes its event rule, collateral token,
-opening time, entry close, horizon, accuracy curve and fee terms. It also
+opening time, entry close, horizon, accuracy curve, early premium maximum and fee terms. It also
 commits to a rules document. Those terms cannot be edited for that pool.
 
 The opening and entry close define when capital can enter. The horizon defines
@@ -40,7 +40,7 @@ H7 puts more emphasis on precise dates; H30 reduces weight more gradually. The
 curve belongs to the pool and stays fixed. Every additional half-life halves
 ideal weight again: one half-life gives one-half weight, two give one-quarter.
 
-Suppose an H15 pool contains two equal stakes of 100 tokens. One forecast is
+Suppose an H15 pool with the premium Off contains two equal stakes of 100 tokens. One forecast is
 exact and the other misses by 15 days. Their weights are in a two-to-one ratio,
 so the 200-token pool allocates approximately 133 and 67 tokens before fees and
 token-unit rounding. The second owner loses capital even though the forecast
@@ -50,6 +50,13 @@ A larger stake can outweigh a more accurate smaller stake. Payouts include any
 returned principal, and a close forecast does not guarantee a profit. The pool
 shows funded forecasts; interpreting them as calibrated probabilities requires
 an additional model.
+
+Pools may also select an immutable early commitment premium of 10%, 20% or 30%,
+with Off as the creation default. This adds calculation weight for funds that
+give up ordinary withdrawal earlier; it is not extra collateral or a guaranteed
+return. An earlier less-accurate forecast can outweigh a later more-accurate
+forecast. Even an exact date can lose money. The [premium guide](early-premium.md)
+defines both deposit choices and the integer formula.
 
 ## How the event becomes accepted
 
@@ -73,10 +80,17 @@ the underlying market move. This path uses no review bond or auditors.
 
 ## Keeping or recovering capital
 
-New capital receives a 48-hour withdrawal allowance, usable only before entry
+Each deposit explicitly chooses ordinary withdrawal rights or immediate
+commitment of only its new amount. Ordinary new capital receives a 48-hour
+withdrawal allowance, usable only before entry
 closes and while the pool remains Active. A top-up during an existing allowance
 does not extend its deadline. After it expires, a new deposit gives an allowance
 for that new amount alone.
+
+Immediate deposits do not add to the withdrawal allowance or remove rights
+from existing funds. Their premium anchor is the executing chain time. Ordinary
+deposits use the end of their actual withdrawal window or entry close, whichever
+is earlier. Neither mode removes the refund or horizon-exit rights below.
 
 At the horizon, owners can exit with their remaining principal while the pool
 is Active, including during pending external event review. Exited capital leaves the

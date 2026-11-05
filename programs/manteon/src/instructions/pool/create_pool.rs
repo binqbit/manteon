@@ -67,12 +67,14 @@ pub(crate) fn handle(
     ctx: Context<CreatePool>,
     event: EventDefinition,
     algorithm: PoolAlgorithm,
+    early_premium_bps: u16,
     agreement_hash: [u8; 32],
     expected_config_hash: [u8; 32],
     opens_at: i64,
     lock_at: i64,
     horizon_at: i64,
 ) -> Result<()> {
+    manteon_core::math::premium::validate_max_bps(early_premium_bps).map_err(ManteonError::from)?;
     require!(
         ctx.accounts.config.terms_hash() == expected_config_hash,
         ManteonError::ConfigTermsChanged
@@ -108,6 +110,7 @@ pub(crate) fn handle(
         config_released: false,
         agreement_hash,
         algorithm,
+        early_premium_bps,
         opens_at,
         lock_at,
         horizon_at,
@@ -116,7 +119,7 @@ pub(crate) fn handle(
         principal: 0,
         active_dates: 0,
         processed_dates: 0,
-        total_weight: 0,
+        total_weight: [0; 32],
         payout_remaining: 0,
         claimed_principal: 0,
         service_eligible_at: None,

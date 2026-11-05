@@ -12,3 +12,4 @@ pub mod transactions;
 mod views;
 
 pub use context::{AUDIT_MINT, DAY, FORECAST, HORIZON, LOCK, OPEN, OWNER_BALANCE, TestContext};
+pub use views::baseline_weight;

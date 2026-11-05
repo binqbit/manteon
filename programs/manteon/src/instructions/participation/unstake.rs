@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use manteon_core::{types::Amount, DomainError};
+use manteon_core::{math::premium, types::Amount, DomainError};
 
 use crate::{
     custody::token::{transfer_exact, validate_owner_account, validate_vault},
@@ -22,7 +22,7 @@ pub struct Unstake<'info> {
         has_one = collateral_mint @ ManteonError::InvalidCollateralMint,
         constraint = pool.audit_config == config.audit_config @ ManteonError::InvalidAuditConfig
     )]
-    pub pool: Account<'info, Pool>,
+    pub pool: Box<Account<'info, Pool>>,
     #[account(
         mut,
         seeds = [Position::SEED, pool.key().as_ref(), &position.forecast_day.to_le_bytes()],
@@ -80,7 +80,8 @@ pub(crate) fn handle(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         return Err(ManteonError::from(DomainError::Locked).into());
     }
     require!(
-        ctx.accounts.stake.principal <= ctx.accounts.position.principal,
+        ctx.accounts.stake.principal <= ctx.accounts.position.principal
+            && ctx.accounts.stake.premium_units <= ctx.accounts.position.premium_units,
         ManteonError::InvalidAccounting
     );
     let allowance = ctx
@@ -89,12 +90,58 @@ pub(crate) fn handle(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         .allowance()?
         .quote_withdrawal(Amount::new(amount), now)
         .map_err(ManteonError::from)?;
+    ctx.accounts.stake.validate_premium(&ctx.accounts.pool)?;
     let book = ctx
         .accounts
         .pool
         .principal_book(&ctx.accounts.position)?
         .quote_remove(Amount::new(amount))
         .map_err(ManteonError::from)?;
+    let rate = premium::rate_bps(
+        ctx.accounts.pool.early_premium_bps,
+        ctx.accounts
+            .stake
+            .withdraw_until
+            .min(ctx.accounts.pool.lock_at),
+        ctx.accounts.pool.opens_at,
+        ctx.accounts.pool.lock_at,
+    )
+    .map_err(ManteonError::from)?;
+    let removed_units = premium::units(Amount::new(amount), rate).map_err(ManteonError::from)?;
+    let stake_units = ctx
+        .accounts
+        .stake
+        .premium_units
+        .checked_sub(removed_units)
+        .ok_or(ManteonError::InvalidAccounting)?;
+    let position_units = ctx
+        .accounts
+        .position
+        .premium_units
+        .checked_sub(removed_units)
+        .ok_or(ManteonError::InvalidAccounting)?;
+    premium::validate_units(
+        allowance.principal(),
+        stake_units,
+        ctx.accounts.pool.early_premium_bps,
+    )
+    .map_err(ManteonError::from)?;
+    premium::validate_allowance(
+        allowance.principal(),
+        allowance.withdrawable_principal(),
+        allowance.withdraw_until(),
+        stake_units,
+        ctx.accounts.pool.early_premium_bps,
+        ctx.accounts.pool.opens_at,
+        ctx.accounts.pool.lock_at,
+    )
+    .map_err(ManteonError::from)?;
+    premium::validate_units(
+        book.position_principal(),
+        position_units,
+        ctx.accounts.pool.early_premium_bps,
+    )
+    .map_err(ManteonError::from)?;
 
     validate_owner_account(
         &ctx.accounts.destination,
@@ -122,7 +169,9 @@ pub(crate) fn handle(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     ctx.accounts.pool.principal = book.pool_principal().get();
     ctx.accounts.pool.active_dates = book.active_dates();
     ctx.accounts.position.principal = book.position_principal().get();
+    ctx.accounts.position.premium_units = position_units;
     ctx.accounts.stake.principal = allowance.principal().get();
+    ctx.accounts.stake.premium_units = stake_units;
     ctx.accounts.stake.withdrawable_principal = allowance.withdrawable_principal().get();
     Ok(())
 }

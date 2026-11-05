@@ -108,6 +108,8 @@ pub(crate) fn pool_liability(
     }
     .validate_ordering()
     .map_err(|_| ReadError::InvalidAccounting)?;
+    manteon_core::math::premium::validate_max_bps(pool.early_premium_bps)
+        .map_err(|_| ReadError::InvalidAccounting)?;
 
     if manteon_core::math::utc_day::utc_day(pool.horizon_at)
         - manteon_core::math::utc_day::utc_day(pool.lock_at)
@@ -147,7 +149,7 @@ pub(crate) fn pool_liability(
             if pool.principal != 0
                 || pool.active_dates != 0
                 || pool.processed_dates != 0
-                || pool.total_weight != 0
+                || pool.total_weight != [0; 32]
                 || pool.payout_remaining != 0
                 || pool.accepted_case.is_some()
                 || event.result.is_some()
@@ -158,7 +160,7 @@ pub(crate) fn pool_liability(
         }
         PoolState::Active | PoolState::Refunding => {
             if pool.processed_dates != 0
-                || pool.total_weight != 0
+                || pool.total_weight != [0; 32]
                 || pool.payout_remaining != 0
                 || (pool.principal == 0) != (pool.active_dates == 0)
                 || pool.active_dates > pool.principal
@@ -168,12 +170,13 @@ pub(crate) fn pool_liability(
             Ok(Amount::new(pool.principal))
         }
         PoolState::Settling | PoolState::Claimable => {
-            let progress = manteon_core::accounting::settlement::SettlementProgress::new(
+            let progress = manteon_core::accounting::settlement::PremiumSettlementProgress::new(
                 pool.algorithm.into(),
+                pool.early_premium_bps,
                 Amount::new(pool.principal),
                 pool.active_dates,
                 pool.processed_dates,
-                pool.total_weight,
+                manteon_core::math::premium::Weight::from_le_bytes(pool.total_weight),
             )
             .map_err(|_| ReadError::InvalidAccounting)?;
             if pool.payout_remaining > pool.principal {

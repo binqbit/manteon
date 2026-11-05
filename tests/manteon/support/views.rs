@@ -7,6 +7,16 @@ use solana_address::Address;
 use solana_keypair::Keypair;
 use solana_signer::Signer;
 
+/// Baseline scenarios retain their independent legacy-weight references while
+/// the program persists the common raw basis-point scale for every policy.
+pub fn baseline_weight(pool: &Pool) -> u128 {
+    use manteon_core::math::premium::{PREMIUM_SCALE, Weight};
+    assert_eq!(pool.early_premium_bps, 0);
+    let raw = Weight::from_le_bytes(pool.total_weight);
+    assert_eq!(raw % Weight::from(PREMIUM_SCALE), Weight::ZERO);
+    u128::try_from(raw / Weight::from(PREMIUM_SCALE)).unwrap()
+}
+
 impl TestContext {
     pub fn position(&self, day: i64) -> Pubkey {
         Pubkey::find_program_address(

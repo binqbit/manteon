@@ -71,6 +71,7 @@ impl TestContext {
             }
             .to_account_metas(None),
             data: manteon::instruction::CreatePool {
+                early_premium_bps: 0,
                 event: manteon::state::EventDefinition::ExternalEvent,
                 agreement_hash: [0xa1; 32],
                 expected_config_hash: self.config_terms_hash(),
@@ -120,6 +121,10 @@ impl TestContext {
         Self::with_event_schedule(OPEN, LOCK, HORIZON, None, algorithm, (0, false))
     }
 
+    pub fn with_premium(algorithm: manteon::state::PoolAlgorithm, max_bps: u16) -> Self {
+        Self::with_premium_schedule(OPEN, LOCK, HORIZON, None, algorithm, (0, false), max_bps)
+    }
+
     pub fn with_profit_fee_recipient(profit_fee_bps: u16, owner_is_recipient: bool) -> Self {
         Self::with_event_schedule(
             OPEN,
@@ -138,6 +143,18 @@ impl TestContext {
         price: Option<manteon::state::PriceThreshold>,
         algorithm: manteon::state::PoolAlgorithm,
         fees: (u16, bool),
+    ) -> Self {
+        Self::with_premium_schedule(opens_at, lock_at, horizon_at, price, algorithm, fees, 0)
+    }
+
+    pub(crate) fn with_premium_schedule(
+        opens_at: i64,
+        lock_at: i64,
+        horizon_at: i64,
+        price: Option<manteon::state::PriceThreshold>,
+        algorithm: manteon::state::PoolAlgorithm,
+        fees: (u16, bool),
+        early_premium_bps: u16,
     ) -> Self {
         let mut config = ConfigContext::new();
         config.profit_fee_bps = fees.0;
@@ -273,6 +290,7 @@ impl TestContext {
         let pool = Keypair::new_from_array([0xb7; 32]);
         let mut create_pool = market.instruction(&pool);
         create_pool.data = manteon::instruction::CreatePool {
+            early_premium_bps,
             event: match price {
                 Some(mut params) => {
                     params.token_mint = token_mint;

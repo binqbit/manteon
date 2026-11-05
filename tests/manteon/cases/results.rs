@@ -1,3 +1,4 @@
+use crate::support::baseline_weight;
 use anchor_lang::{AccountDeserialize, InstructionData};
 use manteon::{
     error::ManteonError,
@@ -149,7 +150,7 @@ fn external_event_settles_the_audited_occurrence_time_and_binds_both_documents()
         );
 
         assert_eq!(context.pool_state().state, PoolState::Claimable);
-        assert_eq!(context.pool_state().total_weight, 100_u128 << 64);
+        assert_eq!(baseline_weight(&context.pool_state()), 100_u128 << 64);
 
         context.send(
             &[claim_ix(

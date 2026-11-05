@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use manteon_core::{
-    accounting::{principal::PrincipalBook, settlement::SettlementProgress},
+    accounting::{principal::PrincipalBook, settlement::PremiumSettlementProgress},
+    math::premium::Weight,
     types::Amount,
     validation::time::Schedule,
 };
@@ -29,6 +30,8 @@ pub struct Pool {
     pub agreement_hash: [u8; 32],
     /// Immutable payout accuracy curve.
     pub algorithm: PoolAlgorithm,
+    /// Immutable maximum early weight premium: 0, 1000, 2000 or 3000 basis points.
+    pub early_premium_bps: u16,
 
     // Immutable entry and horizon schedule.
     pub opens_at: i64,
@@ -47,8 +50,8 @@ pub struct Pool {
 
     // Settlement progress and outstanding payout liability.
     pub processed_dates: u64,
-    /// Unsigned Q64.64 accumulator: 64 integer bits and 64 fractional bits.
-    pub total_weight: u128,
+    /// Raw accuracy × (real principal × 10000 + premium units), unsigned LE U256.
+    pub total_weight: [u8; 32],
     /// Unpaid allocations; after completion, any remainder is rounding dust.
     pub payout_remaining: u64,
     /// Principal of consumed competitive Stakes, including zero-value payouts.
@@ -105,13 +108,14 @@ impl Pool {
     }
 
     /// Read checked progress without granting freeze or processing authority.
-    pub(crate) fn settlement_progress(&self) -> Result<SettlementProgress> {
-        Ok(SettlementProgress::new(
+    pub(crate) fn settlement_progress(&self) -> Result<PremiumSettlementProgress> {
+        Ok(PremiumSettlementProgress::new(
             self.algorithm.into(),
+            self.early_premium_bps,
             Amount::new(self.principal),
             self.active_dates,
             self.processed_dates,
-            self.total_weight,
+            Weight::from_le_bytes(self.total_weight),
         )
         .map_err(ManteonError::from)?)
     }

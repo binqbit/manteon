@@ -1,3 +1,4 @@
+use crate::support::baseline_weight;
 use anchor_lang::{error::ErrorCode, solana_program::program_pack::Pack};
 use anchor_spl::token::spl_token;
 use manteon::{
@@ -167,7 +168,7 @@ fn every_claim_order_preserves_entitlements_frozen_basis_and_rounding_residue() 
             assert_eq!(
                 (
                     pool.principal,
-                    pool.total_weight,
+                    baseline_weight(&pool),
                     pool.active_dates,
                     pool.processed_dates
                 ),

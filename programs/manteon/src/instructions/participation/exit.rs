@@ -81,11 +81,19 @@ pub(crate) fn handle(ctx: Context<Exit>) -> Result<()> {
         .validate_horizon_time(Clock::get()?.unix_timestamp)
         .map_err(ManteonError::from)?;
     require!(
-        ctx.accounts.stake.principal <= ctx.accounts.position.principal,
+        ctx.accounts.stake.principal <= ctx.accounts.position.principal
+            && ctx.accounts.stake.premium_units <= ctx.accounts.position.premium_units,
         ManteonError::InvalidAccounting
     );
     ctx.accounts.stake.allowance()?;
+    ctx.accounts.stake.validate_premium(&ctx.accounts.pool)?;
     let amount = ctx.accounts.stake.principal;
+    let position_units = ctx
+        .accounts
+        .position
+        .premium_units
+        .checked_sub(ctx.accounts.stake.premium_units)
+        .ok_or(ManteonError::InvalidAccounting)?;
     let book = ctx
         .accounts
         .pool
@@ -119,7 +127,9 @@ pub(crate) fn handle(ctx: Context<Exit>) -> Result<()> {
     ctx.accounts.pool.principal = book.pool_principal().get();
     ctx.accounts.pool.active_dates = book.active_dates();
     ctx.accounts.position.principal = book.position_principal().get();
+    ctx.accounts.position.premium_units = position_units;
     ctx.accounts.stake.principal = 0;
+    ctx.accounts.stake.premium_units = 0;
     ctx.accounts.stake.withdrawable_principal = 0;
     ctx.accounts.stake.state = StakeState::Refunded;
     if ctx.accounts.pool.principal == 0 {

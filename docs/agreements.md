@@ -19,15 +19,24 @@ claims requires the event's evidence or source-verification process.
 ## Agreement boundary
 
 Pool creation requires a nonzero agreement commitment and independently checks
-the supplied event, accuracy curve, schedule and reviewed configuration terms.
+the supplied event, accuracy curve, early premium maximum, schedule and reviewed configuration terms.
 It does not receive or parse the agreement document. Applications must check
 that the agreement presented to participants describes those recorded terms,
 evidence sources and review semantics accurately.
 
-The pool's agreement commitment, schedule, algorithm and event definition are
+The pool's agreement commitment, schedule, algorithm, premium maximum and event definition are
 immutable. Editing display metadata or an archive cannot change them. Revised
 terms require a new pool. Identical document bytes can be used in independent
 pools; the pool identities still distinguish their capital and review attempts.
+
+The agreement must state the selected premium maximum (including Off), the
+linear whole-basis-point floor, the ordinary-deposit anchor at the earlier of
+actual withdrawal deadline and entry close, and the immediate-deposit anchor
+at execution. It must distinguish calculation units from collateral and explain
+that premium-weighted payouts can favor an earlier less-accurate forecast over
+a later more-accurate one. The existing 48-hour owner/date withdrawal window,
+refund and horizon-exit conditions remain part of the terms. See the exact
+[premium formula](early-premium.md#exact-integer-calculation).
 
 For automated external-event review, follow Tekmerion's
 [agreement-writing guidance](../vendor/tekmerion/docs/chainlink.md#write-rules-an-auditor-can-apply).
@@ -76,7 +85,7 @@ flowchart LR
    changing newlines, normalizing Unicode or substituting a rendered PDF changes
    the input.
 3. Compare the commitment, then compare the document's event, schedule, accuracy
-   curve and configuration terms with the recorded facts. For a canonical
+   curve, premium maximum and configuration terms with the recorded facts. For a canonical
    result, reproduce the document from the relevant event facts.
 4. Evaluate the evidence under the committed event rules, or the authenticated
    price confirmation under its fixed source rule.

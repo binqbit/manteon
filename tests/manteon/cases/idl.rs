@@ -76,6 +76,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         &idl,
         "create_pool",
         manteon::instruction::CreatePool {
+            early_premium_bps: 0,
             event: manteon::state::EventDefinition::ExternalEvent,
             agreement_hash: [0xa1; 32],
             expected_config_hash: [0xa2; 32],
@@ -263,6 +264,7 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         "config_released",
         "agreement_hash",
         "algorithm",
+        "early_premium_bps",
         "opens_at",
         "lock_at",
         "horizon_at",
@@ -285,7 +287,46 @@ fn anchor_005_generated_idl_matches_compiled_instruction_builders() {
         .iter()
         .find(|field| field["name"] == "total_weight")
         .unwrap();
-    assert_eq!(total_weight["type"], "u128");
+    assert_eq!(total_weight["type"], json!({"array": ["u8", 32]}));
+    for (name, expected) in [
+        (
+            "Position",
+            vec![
+                "pool",
+                "forecast_day",
+                "principal",
+                "premium_units",
+                "computed",
+            ],
+        ),
+        (
+            "Stake",
+            vec![
+                "owner",
+                "position",
+                "principal",
+                "premium_units",
+                "withdrawable_principal",
+                "withdraw_until",
+                "state",
+            ],
+        ),
+    ] {
+        assert_eq!(
+            fields(&idl, name)
+                .iter()
+                .map(|field| field["name"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert_eq!(
+            fields(&idl, name)
+                .iter()
+                .find(|field| field["name"] == "premium_units")
+                .unwrap()["type"],
+            "u128"
+        );
+    }
     assert_eq!(
         fields(&idl, "Event")
             .iter()
@@ -302,7 +343,8 @@ fn browser_participation_vectors_match_anchor_instruction_bytes_and_account_role
     let path = std::env::var_os("MANTEON_CLIENT_VECTORS")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| programs::root().join("tests/fixtures/participation-vectors.json"));
-    let vectors: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let mut vectors: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    let refresh = std::env::var_os("MANTEON_UPDATE_CLIENT_VECTORS").is_some();
     assert_eq!(vectors["programId"], manteon::ID.to_string());
     let keys = &vectors["addresses"];
     let key = |name: &str| keys[name].as_str().unwrap().parse::<Pubkey>().unwrap();
@@ -334,6 +376,7 @@ fn browser_participation_vectors_match_anchor_instruction_bytes_and_account_role
         (
             "stake",
             manteon::instruction::Stake {
+                commit_now: false,
                 forecast_day,
                 amount,
             }
@@ -391,18 +434,25 @@ fn browser_participation_vectors_match_anchor_instruction_bytes_and_account_role
     ];
     for ((name, data, metas), expected) in instructions
         .into_iter()
-        .zip(vectors["instructions"].as_array().unwrap())
+        .zip(vectors["instructions"].as_array_mut().unwrap())
     {
-        assert_eq!(expected["name"], name);
-        assert_eq!(
-            expected["data"],
-            data.iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>()
-        );
+        let encoded = data
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
         let accounts = metas.into_iter().map(|meta| json!({
             "pubkey": meta.pubkey.to_string(), "signer": meta.is_signer, "writable": meta.is_writable,
         })).collect::<Vec<_>>();
-        assert_eq!(expected["accounts"], json!(accounts));
+        let actual = json!({"name": name, "data": encoded, "accounts": accounts});
+        if refresh {
+            *expected = actual;
+        } else {
+            assert_eq!(*expected, actual);
+        }
+    }
+    if refresh {
+        let mut bytes = serde_json::to_vec_pretty(&vectors).unwrap();
+        bytes.push(b'\n');
+        std::fs::write(path, bytes).unwrap();
     }
 }

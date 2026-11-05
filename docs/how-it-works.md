@@ -36,7 +36,17 @@ A Config holds reusable service, collateral, fee and review settings. A Pool
 reserves that Config and fixes its own event, schedule and accuracy curve.
 A Position groups the participating capital on one forecast date. A Stake
 records one owner's capital at that date and whether its entitlement has been
-consumed.
+consumed. Both date and owner records accumulate exact premium units alongside
+real capital. A pool can select an [early commitment weight premium](early-premium.md)
+with a fixed maximum of 0%, 10%, 20% or 30%.
+
+For each new amount, the owner chooses between the existing 48-hour withdrawal
+rules and immediate commitment. Ordinary funds receive a rate anchored at their
+actual withdrawal deadline or entry close, whichever is earlier. Immediate
+funds receive the rate at execution and cannot be ordinarily withdrawn; existing
+funds keep their rights. Refunds and unresolved-event horizon exits remain
+available under the same protocol conditions. Premium units affect payout
+weight, never the amount deposited or refunded.
 
 ```mermaid
 flowchart LR

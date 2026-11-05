@@ -90,6 +90,7 @@ impl PoolContext {
             }
             .to_account_metas(None),
             data: manteon::instruction::CreatePool {
+                early_premium_bps: 0,
                 event: manteon::state::EventDefinition::ExternalEvent,
                 agreement_hash: [0xa1; 32],
                 expected_config_hash: self.config_terms_hash(),

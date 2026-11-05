@@ -1,3 +1,4 @@
+use crate::support::baseline_weight;
 use manteon::{
     error::ManteonError,
     state::{PoolAlgorithm, PoolState, StakeState},
@@ -70,7 +71,7 @@ fn maximum_batch_fits_default_budget_and_zero_payout_still_consumes_the_claim() 
     assert!(metadata.compute_units_consumed <= 200_000);
     assert_eq!(context.pool_state().processed_dates, 8);
     assert!(days.iter().all(|day| context.position_state(*day).computed));
-    let weight = context.pool_state().total_weight;
+    let weight = baseline_weight(&context.pool_state());
     assert!(weight > 0 && weight <= 701_u128 << 64);
     context.send(&[case.finalize_ix(&context, &service)], &[&service]);
     assert_eq!(context.pool_state().state, PoolState::Claimable);
@@ -88,7 +89,7 @@ fn maximum_batch_fits_default_budget_and_zero_payout_still_consumes_the_claim() 
     );
     assert_eq!(context.token_balance(context.alice_token), balance_before);
     assert_eq!(context.pool_state().payout_remaining, 701);
-    assert_eq!(context.pool_state().total_weight, weight);
+    assert_eq!(baseline_weight(&context.pool_state()), weight);
     context.reject(
         &[claim],
         &[&alice],
@@ -181,7 +182,7 @@ fn invalid_batch_tails_roll_back_every_marker_and_the_denominator() {
         assert_eq!(
             (
                 context.pool_state().processed_dates,
-                context.pool_state().total_weight
+                baseline_weight(&context.pool_state())
             ),
             (0, 0)
         );
@@ -211,7 +212,7 @@ fn invalid_batch_tails_roll_back_every_marker_and_the_denominator() {
     assert_eq!(
         (
             context.pool_state().processed_dates,
-            context.pool_state().total_weight
+            baseline_weight(&context.pool_state())
         ),
         (1, 100_u128 << 64)
     );
@@ -230,7 +231,7 @@ fn invalid_batch_tails_roll_back_every_marker_and_the_denominator() {
             pool.principal,
             pool.active_dates,
             pool.processed_dates,
-            pool.total_weight
+            baseline_weight(&pool)
         ),
         (300, 3, 3, 175_u128 << 64)
     );
@@ -285,7 +286,7 @@ fn legal_batch_orders_and_partitions_produce_the_same_frozen_book() {
                 pool.payout_remaining,
                 pool.active_dates,
                 pool.processed_dates,
-                pool.total_weight
+                baseline_weight(&pool)
             ),
             (181, 181, 3, 3, 537_u128 << 62)
         );
@@ -358,7 +359,7 @@ fn year_of_varied_forecasts_preserves_exact_payouts_fees_and_completion_for_ever
             maximum_batch_compute = maximum_batch_compute.max(metadata.compute_units_consumed);
             assert!(metadata.compute_units_consumed <= 200_000);
         }
-        assert_eq!(context.pool_state().total_weight, expected_weight);
+        assert_eq!(baseline_weight(&context.pool_state()), expected_weight);
         assert_eq!(context.pool_state().processed_dates, 365);
         context.send(&[case.finalize_ix(&context, &service)], &[&service]);
         let platform = address(manteon::state::GlobalConfig::vault_address(&pubkey(
@@ -394,7 +395,7 @@ fn year_of_varied_forecasts_preserves_exact_payouts_fees_and_completion_for_ever
                 assert_eq!(context.stake_state(owner, day).state, StakeState::Paid);
                 assert_eq!(context.stake_state(owner, day).principal, principal);
                 assert_eq!(context.pool_state().principal, 186_448);
-                assert_eq!(context.pool_state().total_weight, expected_weight);
+                assert_eq!(baseline_weight(&context.pool_state()), expected_weight);
                 gross_total += gross;
                 platform_total += platform_fee;
                 recipient_total += fee - platform_fee;

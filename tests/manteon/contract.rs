@@ -2,6 +2,9 @@
 
 mod support;
 
+#[path = "cases/premium.rs"]
+mod premium;
+
 #[path = "cases/activation.rs"]
 mod activation;
 #[path = "cases/audit_guards.rs"]

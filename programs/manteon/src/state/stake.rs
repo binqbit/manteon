@@ -14,6 +14,8 @@ pub struct Stake {
     // Participating principal and personal withdrawal allowance.
     /// Participating principal, including funds outside the personal allowance.
     pub principal: u64,
+    /// Exact additive units; these are not collateral or withdrawal rights.
+    pub premium_units: u128,
     /// Spendable only while the personal window and Pool state permit withdrawal.
     pub withdrawable_principal: u64,
     pub withdraw_until: i64,
@@ -32,6 +34,7 @@ impl Stake {
             require!(
                 self.owner == Pubkey::default()
                     && self.principal == 0
+                    && self.premium_units == 0
                     && self.withdrawable_principal == 0
                     && self.withdraw_until == 0
                     && self.state == StakeState::Active,
@@ -56,6 +59,20 @@ impl Stake {
             self.withdraw_until,
         )
         .map_err(ManteonError::from)?)
+    }
+
+    /// Validate retained pending and locked premium capacity under this Pool.
+    pub(crate) fn validate_premium(&self, pool: &super::Pool) -> Result<()> {
+        manteon_core::math::premium::validate_allowance(
+            Amount::new(self.principal),
+            Amount::new(self.withdrawable_principal),
+            self.withdraw_until,
+            self.premium_units,
+            pool.early_premium_bps,
+            pool.opens_at,
+            pool.lock_at,
+        )
+        .map_err(|error| ManteonError::from(error).into())
     }
 }
 

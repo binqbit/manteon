@@ -54,12 +54,18 @@ no later than the horizon.
 
 The personal allowance belongs to an owner's Stake at one forecast date:
 
-- A first deposit gives the full new amount a 48-hour allowance.
+- An ordinary first deposit gives the full new amount a 48-hour allowance.
 - A top-up during a live allowance adds its amount without extending the deadline.
 - A top-up after expiry gives only the new amount a fresh 48-hour allowance.
 - Withdrawal reduces both remaining principal and the available allowance.
 - A full withdrawal leaves an Active, empty Stake. A later eligible deposit
   starts a fresh allowance.
+
+Each deposit explicitly selects ordinary withdrawal rights or immediate
+commitment of only its new amount. Immediate deposits preserve existing rights
+and receive no new ordinary allowance. The [early commitment premium](early-premium.md)
+defines their anchors, integer rounding and mixed-fund accounting. The maximum
+is immutable per pool: Off, 10%, 20% or 30%; Off is the creation default.
 
 For example, an owner deposits 100 tokens on Monday at noon, then adds 20 on
 Tuesday. All 120 are eligible until Wednesday at noon, subject to entry close.
@@ -87,18 +93,22 @@ $$
 e_i = |d_i-d_*|.
 $$
 
-With selected half-life $H$, the exact scaled accuracy coefficient and weight
+With selected half-life $H$, the exact scaled accuracy coefficient and raw weight
 are
 
 $$
 c_i = \left\lfloor 2^{64}\,2^{-e_i/H} \right\rfloor,
 \qquad
-w_i = p_i c_i.
+w_i = (10\,000p_i+s_i)c_i.
 $$
 
 The coefficient is floored **before** multiplying by principal. The scale
 retains 64 fractional bits of accuracy without floating-point arithmetic. The
 admitted date domain keeps each positive stake's coefficient nonzero.
+Here $s_i$ is the sum of retained real amounts multiplied by their fixed integer
+premium basis points. Its [commitment anchor and single basis-point floor](early-premium.md#exact-integer-calculation)
+do not change the forecast's actual day error. At 0%, the common factor 10000
+cancels exactly and gives the baseline gross allocation.
 
 For frozen pool principal $P$ and total weight $W$,
 
@@ -115,8 +125,8 @@ ratio calculation uses checked 256-bit integer arithmetic. Multiplying before
 division preserves fractional weight.
 
 Capital at a shared date is additive: the date's aggregate weight equals the
-sum of its owners' weights. Splitting same-date principal cannot increase that
-weight. Gross payouts and [profit fees](configuration.md#fees) are nevertheless
+sum of its owners' weights. Splitting the same principal and fixed premium units
+at one date cannot increase that weight. Gross payouts and [profit fees](configuration.md#fees) are nevertheless
 floored separately per Stake, so splitting can change token-unit rounding.
 
 ## Settlement and claims
@@ -138,7 +148,8 @@ Frozen principal, date aggregates and total weight remain unchanged. A
 zero-token payout still requires a claim to consume the entitlement.
 
 Principal refunds consume the Stake and remove its principal from the remaining
-refund book. They preserve the Stake's historical deposited amount. Withdrawals,
+refund book together with its premium units. They preserve the Stake's historical
+deposited amount and units. Withdrawals,
 horizon exits and refund claims carry no profit fee.
 
 Independent flooring can leave token dust. Donations also remain outside the

@@ -1,3 +1,4 @@
+use crate::support::baseline_weight;
 use anchor_lang::{AccountDeserialize, InstructionData, error::ErrorCode};
 use manteon::{
     error::ManteonError,
@@ -47,7 +48,7 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
             .svm
             .get_account(&address(PoolContext::vault(keypair)))
             .unwrap();
-        assert_eq!(pool_account.data.len(), 330);
+        assert_eq!(pool_account.data.len(), 348);
         assert_eq!(event_account.data.len(), 261);
         for account in [&pool_account, &event_account] {
             assert_eq!(account.owner, address(manteon::ID));
@@ -70,11 +71,12 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
             (NOW + 10, NOW + 20, NOW + 30)
         );
         assert_eq!(pool.state, PoolState::Draft);
+        assert_eq!(pool.early_premium_bps, 0);
         assert_eq!(pool.accepted_case, None);
         assert_eq!(pool.principal, 0);
         assert_eq!(pool.active_dates, 0);
         assert_eq!(pool.processed_dates, 0);
-        assert_eq!(pool.total_weight, 0);
+        assert_eq!(baseline_weight(&pool), 0);
         assert_eq!(pool.payout_remaining, 0);
         assert_eq!(pool.service_eligible_at, None);
         assert!(!pool.public_proposals);
@@ -114,6 +116,7 @@ fn anchor_008_service_creates_independent_pools_with_canonical_empty_events() {
 
     let mut replay = context.instruction(&first);
     replay.data = manteon::instruction::CreatePool {
+        early_premium_bps: 0,
         event: manteon::state::EventDefinition::ExternalEvent,
         agreement_hash: [0xa1; 32],
         expected_config_hash: context.config_terms_hash(),
@@ -139,6 +142,7 @@ fn anchor_009_pool_schedule_uses_execution_clock_and_committed_ordering() {
     ] {
         let mut instruction = context.instruction(&pool);
         instruction.data = manteon::instruction::CreatePool {
+            early_premium_bps: 0,
             event: manteon::state::EventDefinition::ExternalEvent,
             agreement_hash: [0xa1; 32],
             expected_config_hash: context.config_terms_hash(),
@@ -159,6 +163,7 @@ fn anchor_009_pool_schedule_uses_execution_clock_and_committed_ordering() {
     // been selected. The equal LOCK/horizon boundary remains valid at i64::MAX.
     let mut instruction = context.instruction(&pool);
     instruction.data = manteon::instruction::CreatePool {
+        early_premium_bps: 0,
         event: manteon::state::EventDefinition::ExternalEvent,
         agreement_hash: [0xa1; 32],
         expected_config_hash: context.config_terms_hash(),
@@ -200,6 +205,7 @@ fn anchor_010_pool_creation_rejects_substitution_and_rolls_back_composed_failure
     wrong_event.accounts[4].pubkey = address(PoolContext::event(&another_pool));
     let mut zero_agreement = context.instruction(&pool);
     zero_agreement.data = manteon::instruction::CreatePool {
+        early_premium_bps: 0,
         event: manteon::state::EventDefinition::ExternalEvent,
         agreement_hash: [0; 32],
         expected_config_hash: context.config_terms_hash(),
@@ -257,6 +263,7 @@ fn pool_rejects_empty_agreement_before_creating_market_accounts() {
     let pool = Keypair::new_from_array([0x98; 32]);
     let mut instruction = context.instruction(&pool);
     instruction.data = manteon::instruction::CreatePool {
+        early_premium_bps: 0,
         event: EventDefinition::ExternalEvent,
         agreement_hash: [0; 32],
         expected_config_hash: context.config_terms_hash(),
@@ -283,6 +290,7 @@ fn pool_creation_commits_every_algorithm_and_enforces_its_horizon_domain() {
         let pool = Keypair::new_from_array([0x91; 32]);
         let data = |horizon_at| {
             manteon::instruction::CreatePool {
+                early_premium_bps: 0,
                 event: manteon::state::EventDefinition::ExternalEvent,
                 algorithm,
                 agreement_hash: [0xa1; 32],

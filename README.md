@@ -3,7 +3,7 @@
 Manteon is a Solana protocol for forecasts about **when an event will happen**.
 Participants choose a UTC date and commit capital to a pool. Once the event is
 accepted, the protocol distributes the remaining capital according to each
-forecast's accuracy and stake size.
+forecast's accuracy, stake size and the pool's optional early commitment premium.
 
 Pools support external event dates and token price threshold crossings. External event facts
 use the separate [Tekmerion review protocol](vendor/tekmerion/docs/concept.md).
@@ -24,6 +24,7 @@ to the first stable **1.0.0** release.
 | [Concept](docs/concept.md)                 | What a funded date forecast means and how accuracy affects capital.       |
 | [How it works](docs/how-it-works.md)       | Participation, event acceptance, settlement and lifecycle diagrams.       |
 | [Protocol specification](docs/protocol.md) | Exact time boundaries, withdrawal rules and payout arithmetic.            |
+| [Early commitment premium](docs/early-premium.md) | Both deposit modes, immutable 0/10/20/30% policy and exact integer weights. |
 | [Event rules](docs/events.md)              | External event evidence review, price confirmation and source safeguards. |
 | [Chainlink review](docs/chainlink.md)      | Automated auditor integration, fixed agreements and participant rights.   |
 | [Configuration](docs/configuration.md)     | Service and governance roles, fixed fees and reusable settings.           |

@@ -4,7 +4,7 @@ use manteon_core::{
     accounting::principal::PrincipalBook,
     math::{
         fees::{quote_profit_fees, ProfitFees},
-        payout::quote_gross_payout,
+        premium::{self, Weight},
         utc_day::{day_error, utc_day},
     },
     types::Amount,
@@ -83,39 +83,73 @@ pub struct Claim<'info> {
 }
 
 pub(crate) fn handle(ctx: Context<Claim>) -> Result<()> {
-    let pool = &mut ctx.accounts.pool;
-    let stake = &mut ctx.accounts.stake;
+    validate_entitlement(&ctx.accounts.pool, &ctx.accounts.stake, &ctx.accounts.event)?;
+    let occurred_at = ctx.accounts.event.result.map(|result| result.occurred_at());
+    let payment = PreparedClaim::prepare(
+        &ctx.accounts.pool,
+        &ctx.accounts.position,
+        &ctx.accounts.stake,
+        occurred_at,
+    )?;
+    execute_claim(
+        payment,
+        &mut ctx.accounts.pool,
+        &mut ctx.accounts.position,
+        &mut ctx.accounts.stake,
+        &mut ctx.accounts.config,
+        &ctx.accounts.owner,
+        &ctx.accounts.collateral_mint,
+        &mut ctx.accounts.destination,
+        &ctx.accounts.vault_authority,
+        &mut ctx.accounts.vault,
+        ctx.accounts.fee_recipient.as_mut(),
+        &mut ctx.accounts.platform_fee_vault,
+        ctx.bumps.vault_authority,
+    )
+}
+
+pub(crate) fn validate_entitlement(pool: &Pool, stake: &Stake, event: &Event) -> Result<()> {
     require!(
         stake.state == StakeState::Active && stake.principal > 0,
         ManteonError::InvalidStake
     );
-    let occurred_at = ctx.accounts.event.result.map(|result| result.occurred_at());
     require!(
-        occurred_at.is_some()
+        event.result.is_some()
             || (pool.state == PoolState::Refunding
                 && matches!(
-                    ctx.accounts.event.definition,
+                    event.definition,
                     crate::state::EventDefinition::TokenPriceThresholdCrossing { .. }
                 )),
         ManteonError::InvalidEventResult
     );
-    let payment = PreparedClaim::prepare(pool, &ctx.accounts.position, stake, occurred_at)?;
+    Ok(())
+}
 
-    token::validate_owner_account(
-        &ctx.accounts.destination,
-        &ctx.accounts.owner.key(),
-        &pool.collateral_mint,
-    )?;
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn execute_claim<'info>(
+    payment: PreparedClaim,
+    pool: &mut Account<'info, Pool>,
+    position: &mut Account<'info, Position>,
+    stake: &mut Account<'info, Stake>,
+    config: &mut Account<'info, Config>,
+    owner: &Signer<'info>,
+    collateral_mint: &Account<'info, Mint>,
+    destination: &mut Account<'info, TokenAccount>,
+    vault_authority: &UncheckedAccount<'info>,
+    vault: &mut Account<'info, TokenAccount>,
+    fee_recipient: Option<&mut Account<'info, TokenAccount>>,
+    platform_fee_vault: &mut Account<'info, TokenAccount>,
+    vault_bump: u8,
+) -> Result<()> {
+    token::validate_owner_account(destination, &owner.key(), &pool.collateral_mint)?;
     token::validate_vault(
-        &ctx.accounts.vault,
+        vault,
         &pool.collateral_mint,
-        &ctx.accounts.vault_authority.key(),
+        &vault_authority.key(),
         payment.liability,
     )?;
     if payment.fees.recipient.get() > 0 {
-        let recipient = ctx
-            .accounts
-            .fee_recipient
+        let recipient = fee_recipient
             .as_ref()
             .ok_or(ManteonError::InvalidFeeRecipient)?;
         require_keys_eq!(
@@ -125,12 +159,12 @@ pub(crate) fn handle(ctx: Context<Claim>) -> Result<()> {
         );
         require_keys_neq!(
             recipient.key(),
-            ctx.accounts.vault.key(),
+            vault.key(),
             ManteonError::InvalidFeeRecipient
         );
         require_keys_neq!(
             recipient.key(),
-            ctx.accounts.platform_fee_vault.key(),
+            platform_fee_vault.key(),
             ManteonError::InvalidFeeRecipient
         );
         require!(
@@ -141,60 +175,52 @@ pub(crate) fn handle(ctx: Context<Claim>) -> Result<()> {
         );
     }
     token::validate_vault(
-        &ctx.accounts.platform_fee_vault,
+        platform_fee_vault,
         &pool.collateral_mint,
         &GlobalConfig::address(),
         0,
     )?;
     let pool_key = pool.key();
-    let seeds: &[&[u8]] = &[
-        Pool::VAULT_AUTHORITY_SEED,
-        pool_key.as_ref(),
-        &[ctx.bumps.vault_authority],
-    ];
+    let seeds: &[&[u8]] = &[Pool::VAULT_AUTHORITY_SEED, pool_key.as_ref(), &[vault_bump]];
     token::transfer_exact(
-        &ctx.accounts.collateral_mint,
-        &mut ctx.accounts.vault,
-        &mut ctx.accounts.destination,
-        ctx.accounts.vault_authority.to_account_info(),
+        collateral_mint,
+        vault,
+        destination,
+        vault_authority.to_account_info(),
         &[seeds],
         payment.fees.net.get(),
     )?;
     if payment.fees.recipient.get() > 0 {
         // The owner may also be the configured recipient; reload aliased balances.
-        let recipient = ctx
-            .accounts
-            .fee_recipient
-            .as_mut()
-            .ok_or(ManteonError::InvalidFeeRecipient)?;
+        let recipient = fee_recipient.ok_or(ManteonError::InvalidFeeRecipient)?;
         recipient.reload()?;
         token::transfer_exact(
-            &ctx.accounts.collateral_mint,
-            &mut ctx.accounts.vault,
+            collateral_mint,
+            vault,
             recipient,
-            ctx.accounts.vault_authority.to_account_info(),
+            vault_authority.to_account_info(),
             &[seeds],
             payment.fees.recipient.get(),
         )?;
     }
     if payment.fees.platform.get() > 0 {
         token::transfer_exact(
-            &ctx.accounts.collateral_mint,
-            &mut ctx.accounts.vault,
-            &mut ctx.accounts.platform_fee_vault,
-            ctx.accounts.vault_authority.to_account_info(),
+            collateral_mint,
+            vault,
+            platform_fee_vault,
+            vault_authority.to_account_info(),
             &[seeds],
             payment.fees.platform.get(),
         )?;
     }
 
-    payment.record(pool, &mut ctx.accounts.position, stake)?;
-    pool.release_if_complete(&mut ctx.accounts.config)?;
+    payment.record(pool, position, stake)?;
+    pool.release_if_complete(config)?;
     Ok(())
 }
 
 /// Validate all accounting before CPI; record only the prepared result after payment.
-struct PreparedClaim {
+pub(crate) struct PreparedClaim {
     amount: u64,
     fees: ProfitFees,
     liability: u64,
@@ -202,12 +228,29 @@ struct PreparedClaim {
 }
 
 impl PreparedClaim {
-    fn prepare(
+    pub(crate) fn prepare(
         pool: &Pool,
         position: &Position,
         stake: &Stake,
         occurred_at: Option<i64>,
     ) -> Result<Self> {
+        stake.validate_premium(pool)?;
+        require!(
+            stake.principal <= position.principal && stake.premium_units <= position.premium_units,
+            ManteonError::InvalidAccounting
+        );
+        premium::validate_units(
+            Amount::new(stake.principal),
+            stake.premium_units,
+            pool.early_premium_bps,
+        )
+        .map_err(ManteonError::from)?;
+        premium::validate_units(
+            Amount::new(position.principal),
+            position.premium_units,
+            pool.early_premium_bps,
+        )
+        .map_err(ManteonError::from)?;
         let (amount, liability) = match pool.state {
             PoolState::Claimable => {
                 let occurred_at = occurred_at.ok_or(ManteonError::InvalidEventResult)?;
@@ -215,12 +258,14 @@ impl PreparedClaim {
                     position.computed && stake.principal <= position.principal,
                     ManteonError::InvalidPosition
                 );
-                let quote = quote_gross_payout(
+                let quote = premium::quote_gross(
                     pool.algorithm.into(),
                     Amount::new(pool.principal),
                     Amount::new(stake.principal),
+                    stake.premium_units,
+                    pool.early_premium_bps,
                     day_error(position.forecast_day, utc_day(occurred_at)),
-                    pool.total_weight,
+                    Weight::from_le_bytes(pool.total_weight),
                 )
                 .map_err(ManteonError::from)?;
                 (quote.get(), pool.payout_remaining)
@@ -259,6 +304,10 @@ impl PreparedClaim {
             pool.principal = book.pool_principal().get();
             pool.active_dates = book.active_dates();
             position.principal = book.position_principal().get();
+            position.premium_units = position
+                .premium_units
+                .checked_sub(stake.premium_units)
+                .ok_or(ManteonError::InvalidAccounting)?;
             stake.state = StakeState::Refunded;
         } else {
             pool.claimed_principal = pool

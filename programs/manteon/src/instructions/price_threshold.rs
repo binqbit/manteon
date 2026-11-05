@@ -190,7 +190,7 @@ pub(crate) fn finalize(ctx: Context<PriceThresholdPool>) -> Result<()> {
     }
     require!(
         ctx.accounts.pool.processed_dates == 0
-            && ctx.accounts.pool.total_weight == 0
+            && ctx.accounts.pool.total_weight == [0; 32]
             && ctx.accounts.pool.payout_remaining == 0,
         ManteonError::InvalidAccounting
     );

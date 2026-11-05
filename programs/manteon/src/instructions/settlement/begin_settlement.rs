@@ -74,7 +74,7 @@ pub(crate) fn handle(ctx: Context<BeginSettlement>, data: EventResult) -> Result
         pool.principal,
     )?;
     require!(
-        pool.processed_dates == 0 && pool.total_weight == 0 && pool.payout_remaining == 0,
+        pool.processed_dates == 0 && pool.total_weight == [0; 32] && pool.payout_remaining == 0,
         ManteonError::InvalidAccounting
     );
     let occurred_at = data.occurred_at();

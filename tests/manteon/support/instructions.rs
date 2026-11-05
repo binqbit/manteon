@@ -14,6 +14,22 @@ use super::{
 };
 
 impl TestContext {
+    pub fn stake_committed_ix(
+        &self,
+        owner: &Keypair,
+        source: Address,
+        forecast_day: i64,
+        amount: u64,
+    ) -> Instruction {
+        let mut ix = self.stake_ix(owner, source, forecast_day, amount);
+        ix.data = manteon::instruction::Stake {
+            forecast_day,
+            amount,
+            commit_now: true,
+        }
+        .data();
+        ix
+    }
     pub fn activate_ix(&self) -> Instruction {
         let mut ix = Instruction {
             program_id: address(manteon::ID),
@@ -56,6 +72,7 @@ impl TestContext {
             }
             .to_account_metas(None),
             data: manteon::instruction::Stake {
+                commit_now: false,
                 forecast_day: day,
                 amount,
             }

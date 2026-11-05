@@ -14,6 +14,8 @@ pub struct Position {
     // Participation basis and settlement consumption.
     /// Current participating principal; immutable after settlement freeze.
     pub principal: u64,
+    /// Sum of retained real amounts multiplied by their fixed premium basis points.
+    pub premium_units: u128,
     /// Whether this date has contributed to the single settlement calculation.
     pub computed: bool,
 }
@@ -26,7 +28,10 @@ impl Position {
     pub(crate) fn validate_deposit(&self, pool: Pubkey, forecast_day: i64) -> Result<()> {
         if self.pool == Pubkey::default() {
             require!(
-                self.forecast_day == 0 && self.principal == 0 && !self.computed,
+                self.forecast_day == 0
+                    && self.principal == 0
+                    && self.premium_units == 0
+                    && !self.computed,
                 ManteonError::InvalidPosition
             );
         } else {

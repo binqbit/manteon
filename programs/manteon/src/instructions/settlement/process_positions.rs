@@ -71,12 +71,17 @@ pub(crate) fn handle<'info>(ctx: Context<'info, ProcessPositions<'info>>) -> Res
         let amount = Amount::new(position.principal);
         let error_days = day_error(position.forecast_day, result_day);
         progress
-            .process_position(amount, error_days, &mut position.computed)
+            .process_position(
+                amount,
+                position.premium_units,
+                error_days,
+                &mut position.computed,
+            )
             .map_err(ManteonError::from)?;
         position.exit(&crate::ID)?;
     }
     pool.processed_dates = progress.processed_dates();
-    pool.total_weight = progress.total_weight();
+    pool.total_weight = progress.total_weight().to_le_bytes();
     Ok(())
 }
 

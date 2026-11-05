@@ -178,6 +178,7 @@ fn anchor_017_financial_operations_require_canonical_encoding() {
         .data(),
         manteon::instruction::CompletePool {}.data(),
         manteon::instruction::CreatePool {
+            early_premium_bps: 0,
             event: manteon::state::EventDefinition::ExternalEvent,
             agreement_hash: [0xa1; 32],
             expected_config_hash: [0xa2; 32],
@@ -193,6 +194,7 @@ fn anchor_017_financial_operations_require_canonical_encoding() {
         manteon::instruction::FinalizePriceThreshold {}.data(),
         manteon::instruction::ExpirePriceObservation {}.data(),
         manteon::instruction::Stake {
+            commit_now: false,
             forecast_day: 1,
             amount: 1,
         }

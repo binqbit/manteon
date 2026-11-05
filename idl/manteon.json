@@ -420,6 +420,10 @@
           }
         },
         {
+          "name": "early_premium_bps",
+          "type": "u16"
+        },
+        {
           "name": "agreement_hash",
           "type": {
             "array": [
@@ -934,6 +938,10 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "commit_now",
+          "type": "bool"
         }
       ]
     },
@@ -1772,6 +1780,13 @@
             }
           },
           {
+            "name": "early_premium_bps",
+            "docs": [
+              "Immutable maximum early weight premium: 0, 1000, 2000 or 3000 basis points."
+            ],
+            "type": "u16"
+          },
+          {
             "name": "opens_at",
             "type": "i64"
           },
@@ -1818,9 +1833,14 @@
           {
             "name": "total_weight",
             "docs": [
-              "Unsigned Q64.64 accumulator: 64 integer bits and 64 fractional bits."
+              "Raw accuracy × (real principal × 10000 + premium units), unsigned LE U256."
             ],
-            "type": "u128"
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "payout_remaining",
@@ -1925,6 +1945,13 @@
               "Current participating principal; immutable after settlement freeze."
             ],
             "type": "u64"
+          },
+          {
+            "name": "premium_units",
+            "docs": [
+              "Sum of retained real amounts multiplied by their fixed premium basis points."
+            ],
+            "type": "u128"
           },
           {
             "name": "computed",
@@ -2106,6 +2133,13 @@
               "Participating principal, including funds outside the personal allowance."
             ],
             "type": "u64"
+          },
+          {
+            "name": "premium_units",
+            "docs": [
+              "Exact additive units; these are not collateral or withdrawal rights."
+            ],
+            "type": "u128"
           },
           {
             "name": "withdrawable_principal",

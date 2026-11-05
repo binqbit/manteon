@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use manteon_core::types::Amount;
+use manteon_core::{math::premium, types::Amount};
 
 use crate::{
     custody::token::{transfer_exact, validate_owner_account, validate_vault},
@@ -74,7 +74,12 @@ pub struct Stake<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub(crate) fn handle(ctx: Context<Stake>, forecast_day: i64, amount: u64) -> Result<()> {
+pub(crate) fn handle(
+    ctx: Context<Stake>,
+    forecast_day: i64,
+    amount: u64,
+    commit_now: bool,
+) -> Result<()> {
     require!(
         !ctx.accounts.pool.config_released && ctx.accounts.pool.state == PoolState::Active,
         ManteonError::InvalidPoolState
@@ -96,22 +101,78 @@ pub(crate) fn handle(ctx: Context<Stake>, forecast_day: i64, amount: u64) -> Res
     ctx.accounts
         .stake
         .validate_deposit(owner_key, position_key)?;
+    ctx.accounts.stake.validate_premium(&ctx.accounts.pool)?;
+    premium::validate_units(
+        Amount::new(ctx.accounts.position.principal),
+        ctx.accounts.position.premium_units,
+        ctx.accounts.pool.early_premium_bps,
+    )
+    .map_err(ManteonError::from)?;
     require!(
-        ctx.accounts.stake.principal <= ctx.accounts.position.principal,
+        ctx.accounts.stake.principal <= ctx.accounts.position.principal
+            && ctx.accounts.stake.premium_units <= ctx.accounts.position.premium_units,
         ManteonError::InvalidAccounting
     );
-    let allowance = ctx
+    let snapshot = ctx.accounts.stake.allowance()?;
+    let allowance = if commit_now {
+        snapshot.quote_committed_top_up(Amount::new(amount))
+    } else {
+        snapshot.quote_top_up(Amount::new(amount), now)
+    }
+    .map_err(ManteonError::from)?;
+    let anchor = if commit_now {
+        now
+    } else {
+        allowance.withdraw_until().min(ctx.accounts.pool.lock_at)
+    };
+    let rate = premium::rate_bps(
+        ctx.accounts.pool.early_premium_bps,
+        anchor,
+        ctx.accounts.pool.opens_at,
+        ctx.accounts.pool.lock_at,
+    )
+    .map_err(ManteonError::from)?;
+    let added_units = premium::units(Amount::new(amount), rate).map_err(ManteonError::from)?;
+    let stake_units = ctx
         .accounts
         .stake
-        .allowance()?
-        .quote_top_up(Amount::new(amount), now)
-        .map_err(ManteonError::from)?;
+        .premium_units
+        .checked_add(added_units)
+        .ok_or(ManteonError::Arithmetic)?;
+    let position_units = ctx
+        .accounts
+        .position
+        .premium_units
+        .checked_add(added_units)
+        .ok_or(ManteonError::Arithmetic)?;
     let book = ctx
         .accounts
         .pool
         .principal_book(&ctx.accounts.position)?
         .quote_add(Amount::new(amount))
         .map_err(ManteonError::from)?;
+    premium::validate_units(
+        allowance.principal(),
+        stake_units,
+        ctx.accounts.pool.early_premium_bps,
+    )
+    .map_err(ManteonError::from)?;
+    premium::validate_allowance(
+        allowance.principal(),
+        allowance.withdrawable_principal(),
+        allowance.withdraw_until(),
+        stake_units,
+        ctx.accounts.pool.early_premium_bps,
+        ctx.accounts.pool.opens_at,
+        ctx.accounts.pool.lock_at,
+    )
+    .map_err(ManteonError::from)?;
+    premium::validate_units(
+        book.position_principal(),
+        position_units,
+        ctx.accounts.pool.early_premium_bps,
+    )
+    .map_err(ManteonError::from)?;
 
     validate_owner_account(
         &ctx.accounts.source,
@@ -139,12 +200,14 @@ pub(crate) fn handle(ctx: Context<Stake>, forecast_day: i64, amount: u64) -> Res
         pool: pool_key,
         forecast_day,
         principal: book.position_principal().get(),
+        premium_units: position_units,
         computed: false,
     });
     ctx.accounts.stake.set_inner(StakeAccount {
         owner: owner_key,
         position: position_key,
         principal: allowance.principal().get(),
+        premium_units: stake_units,
         withdrawable_principal: allowance.withdrawable_principal().get(),
         withdraw_until: allowance.withdraw_until(),
         state: StakeState::Active,

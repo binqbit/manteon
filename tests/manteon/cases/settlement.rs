@@ -5,6 +5,7 @@ use super::support::{
     setup::config::{address, pubkey},
     setup::pool::PoolContext,
 };
+use crate::support::baseline_weight;
 use anchor_spl::token::spl_token;
 use manteon::{
     error::ManteonError,
@@ -98,7 +99,7 @@ fn anchor_030_real_case_freezes_book_and_claims_preserve_basis_and_donations() {
         &[&service],
     );
     let weight = 150_u128 << 64;
-    assert_eq!(context.pool_state().total_weight, weight);
+    assert_eq!(baseline_weight(&context.pool_state()), weight);
     let alice_claim = claim_ix(&context, &alice, FORECAST, pubkey(context.alice_token));
     // Actual SPL freeze failure rolls back the claim's liability and terminal flag.
     let freeze = spl_token::instruction::freeze_account(
@@ -154,7 +155,11 @@ fn anchor_030_real_case_freezes_book_and_claims_preserve_basis_and_donations() {
     );
     let pool = context.pool_state();
     assert_eq!(
-        (pool.principal, pool.total_weight, pool.payout_remaining),
+        (
+            pool.principal,
+            baseline_weight(&pool),
+            pool.payout_remaining
+        ),
         (200, weight, 1)
     );
     assert_eq!(context.position_state(FORECAST).principal, 100);
@@ -291,7 +296,7 @@ fn anchor_031_pre_lock_result_refunds_remaining_principal_without_fees() {
         (
             context.pool_state().principal,
             context.pool_state().active_dates,
-            context.pool_state().total_weight,
+            baseline_weight(&context.pool_state()),
             context.pool_state().payout_remaining,
         ),
         (0, 0, 0, 0)
@@ -457,7 +462,7 @@ fn horizon_exit_and_settlement_freeze_serialize_without_reintroducing_returned_p
                     pool.principal,
                     pool.active_dates,
                     pool.processed_dates,
-                    pool.total_weight,
+                    baseline_weight(&pool),
                     pool.payout_remaining
                 ),
                 (100, 1, 1, 50_u128 << 64, 0)
@@ -471,7 +476,7 @@ fn horizon_exit_and_settlement_freeze_serialize_without_reintroducing_returned_p
                     pool.principal,
                     pool.active_dates,
                     pool.processed_dates,
-                    pool.total_weight,
+                    baseline_weight(&pool),
                     pool.payout_remaining
                 ),
                 (200, 2, 2, 150_u128 << 64, 1)
@@ -645,7 +650,7 @@ fn pool_accuracy_algorithms_change_real_claims_and_preserve_frozen_weights() {
                 ],
                 &[&service],
             );
-            let frozen_weight = context.pool_state().total_weight;
+            let frozen_weight = baseline_weight(&context.pool_state());
             context.send(
                 &[claim_ix(
                     &context,
@@ -675,7 +680,7 @@ fn pool_accuracy_algorithms_change_real_claims_and_preserve_frozen_weights() {
             let pool = context.pool_state();
             assert_eq!(pool.algorithm, algorithm);
             assert_eq!(pool.principal, 200);
-            assert_eq!(pool.total_weight, frozen_weight);
+            assert_eq!(baseline_weight(&pool), frozen_weight);
             assert_eq!(pool.payout_remaining, 200 - alice_payout - bob_payout);
         }
     }

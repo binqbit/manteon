@@ -152,6 +152,7 @@ pub mod manteon {
         ctx: Context<CreatePool>,
         event: state::EventDefinition,
         algorithm: state::PoolAlgorithm,
+        early_premium_bps: u16,
         agreement_hash: [u8; 32],
         expected_config_hash: [u8; 32],
         opens_at: i64,
@@ -162,6 +163,7 @@ pub mod manteon {
             ctx,
             event,
             algorithm,
+            early_premium_bps,
             agreement_hash,
             expected_config_hash,
             opens_at,
@@ -190,8 +192,13 @@ pub mod manteon {
         instructions::price_threshold::expire(ctx)
     }
 
-    pub fn stake(ctx: Context<Stake>, forecast_day: i64, amount: u64) -> Result<()> {
-        instructions::participation::stake::handle(ctx, forecast_day, amount)
+    pub fn stake(
+        ctx: Context<Stake>,
+        forecast_day: i64,
+        amount: u64,
+        commit_now: bool,
+    ) -> Result<()> {
+        instructions::participation::stake::handle(ctx, forecast_day, amount, commit_now)
     }
 
     pub fn unstake(ctx: Context<Unstake>, amount: u64) -> Result<()> {
