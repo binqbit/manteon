@@ -95,12 +95,15 @@ pub enum ManteonError {
     PoolNotComplete,
     #[msg("Configuration settings changed; review the pool terms again")]
     ConfigTermsChanged,
+    #[msg("Early weight premium must be 0, 1000, 2000 or 3000 basis points")]
+    InvalidPremiumPolicy,
 }
 
 impl From<manteon_core::DomainError> for ManteonError {
     fn from(value: manteon_core::DomainError) -> Self {
         use manteon_core::DomainError::*;
         match value {
+            InvalidPremiumPolicy => Self::InvalidPremiumPolicy,
             InvalidFeeRates => Self::InvalidFeeRates,
             ArithmeticOverflow | ArithmeticUnderflow => Self::Arithmetic,
             ZeroAmount | InsufficientAllowance => Self::InvalidAmount,

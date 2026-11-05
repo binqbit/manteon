@@ -3,6 +3,8 @@
 /// Checked calculation error; not a numeric onchain ABI.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DomainError {
+    /// The immutable early premium maximum is not 0, 1000, 2000 or 3000 basis points.
+    InvalidPremiumPolicy,
     /// Profit fee exceeds its hard cap or the platform share exceeds the total fee.
     InvalidFeeRates,
     /// An addition or multiplication exceeded the calculation representation.

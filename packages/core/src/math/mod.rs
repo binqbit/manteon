@@ -4,5 +4,6 @@ pub mod accuracy;
 pub mod checked_amounts;
 pub mod fees;
 pub mod payout;
+pub mod premium;
 pub mod price;
 pub mod utc_day;

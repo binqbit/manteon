@@ -74,6 +74,20 @@ impl AllowanceSnapshot {
         Self::new(principal, withdrawable_principal, withdraw_until)
     }
 
+    /// Add only the new amount as immediately committed real principal.
+    ///
+    /// Existing withdrawal rights are unchanged. A zero-principal Stake has no
+    /// live window, so a stale deadline cannot shorten a later ordinary deposit.
+    pub fn quote_committed_top_up(self, amount: Amount) -> Result<Self, DomainError> {
+        require_positive(amount)?;
+        let principal = self.principal.checked_add(amount)?;
+        if self.principal == Amount::ZERO {
+            Self::new(principal, Amount::ZERO, 0)
+        } else {
+            Self::new(principal, self.withdrawable_principal, self.withdraw_until)
+        }
+    }
+
     /// Quotes a positive debit from the live personal allowance.
     ///
     /// This calculates amounts only. A quote reaching zero does not select the

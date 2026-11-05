@@ -1458,6 +1458,11 @@
       "code": 6041,
       "name": "ConfigTermsChanged",
       "msg": "Configuration settings changed; review the pool terms again"
+    },
+    {
+      "code": 6042,
+      "name": "InvalidPremiumPolicy",
+      "msg": "Early weight premium must be 0, 1000, 2000 or 3000 basis points"
     }
   ],
   "types": [

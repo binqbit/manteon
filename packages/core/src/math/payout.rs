@@ -25,13 +25,32 @@ pub fn quote_gross_payout(
     error_days: u64,
     total_weight: u128,
 ) -> Result<Amount, DomainError> {
+    let stake_weight = accuracy::weighted_principal(algorithm, stake_principal, error_days);
+    quote_gross_from_weight(pool_principal, stake_principal, stake_weight, total_weight)
+}
+
+/// Quote gross atoms from an already accumulated owner/date weight.
+///
+/// Each retained contribution must be included exactly once before calling this
+/// function. This performs the same local principal/capacity guards as the
+/// legacy quote; it does not authenticate entries or establish completeness.
+/// The single gross allocation includes returned principal. A profit fee, if
+/// any, is applied once to this owner/date allocation rather than per entry.
+pub fn quote_gross_from_weight(
+    pool_principal: Amount,
+    stake_principal: Amount,
+    stake_weight: u128,
+    total_weight: u128,
+) -> Result<Amount, DomainError> {
     if total_weight == 0 {
         return Err(DomainError::ZeroDenominator);
     }
     if stake_principal > pool_principal {
         return Err(DomainError::InvalidAccounting);
     }
-    let stake_weight = accuracy::weighted_principal(algorithm, stake_principal, error_days);
+    if stake_weight > u128::from(stake_principal.get()) * accuracy::SCALE {
+        return Err(DomainError::InvalidAccounting);
+    }
     if stake_weight > total_weight {
         return Err(DomainError::InvalidAccounting);
     }

@@ -7,6 +7,124 @@ use crate::{
     types::{Amount, PoolAlgorithm},
 };
 
+use crate::math::premium::{self, Weight};
+
+/// Single-pass settlement over date aggregates with integer premium units.
+///
+/// The runtime authenticates the frozen date set and each persistent computed
+/// marker. This local snapshot enforces capacity and count bounds, not identity.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PremiumSettlementProgress {
+    algorithm: PoolAlgorithm,
+    max_bps: u16,
+    pool_principal: Amount,
+    active_dates: u64,
+    processed_dates: u64,
+    total_weight: Weight,
+}
+
+impl PremiumSettlementProgress {
+    /// Validate the frozen real basis and completed-date raw weight capacity.
+    pub fn new(
+        algorithm: PoolAlgorithm,
+        max_bps: u16,
+        pool_principal: Amount,
+        active_dates: u64,
+        processed_dates: u64,
+        total_weight: Weight,
+    ) -> Result<Self, DomainError> {
+        premium::validate_max_bps(max_bps)?;
+        let principal = pool_principal.get();
+        if (principal == 0) != (active_dates == 0)
+            || active_dates > principal
+            || processed_dates > active_dates
+        {
+            return Err(DomainError::InvalidAccounting);
+        }
+        let unprocessed_dates = active_dates - processed_dates;
+        let capacity = premium::max_weight(Amount::new(principal - unprocessed_dates), max_bps)?;
+        if (processed_dates == 0 && total_weight != Weight::ZERO) || total_weight > capacity {
+            return Err(DomainError::InvalidAccounting);
+        }
+        Ok(Self {
+            algorithm,
+            max_bps,
+            pool_principal,
+            active_dates,
+            processed_dates,
+            total_weight,
+        })
+    }
+
+    /// Number of positive-principal dates included exactly once by their markers.
+    pub const fn processed_dates(&self) -> u64 {
+        self.processed_dates
+    }
+
+    /// Exact accumulated raw weight; persist its 32-byte little-endian encoding.
+    pub const fn total_weight(&self) -> Weight {
+        self.total_weight
+    }
+
+    /// Add one full positive date and set its marker only after all checks pass.
+    pub fn process_position(
+        &mut self,
+        principal: Amount,
+        premium_units: u128,
+        error_days: u64,
+        computed: &mut bool,
+    ) -> Result<(), DomainError> {
+        if *computed {
+            return Err(DomainError::PositionAlreadyComputed);
+        }
+        if principal == Amount::ZERO {
+            return Err(DomainError::ZeroAmount);
+        }
+        if self.processed_dates == self.active_dates {
+            return Err(DomainError::InvalidAccounting);
+        }
+        PrincipalBook::new(self.pool_principal, principal, self.active_dates)?;
+        let remaining_dates = self.active_dates - self.processed_dates - 1;
+        let previous_capacity = self.pool_principal.get() - principal.get() - remaining_dates;
+        if self.total_weight > premium::max_weight(Amount::new(previous_capacity), self.max_bps)? {
+            return Err(DomainError::InvalidAccounting);
+        }
+        let weight = premium::weighted_principal(
+            self.algorithm,
+            principal,
+            premium_units,
+            self.max_bps,
+            error_days,
+        )?;
+        let total_weight = self
+            .total_weight
+            .checked_add(weight)
+            .ok_or(DomainError::ArithmeticOverflow)?;
+        let next = Self::new(
+            self.algorithm,
+            self.max_bps,
+            self.pool_principal,
+            self.active_dates,
+            self.processed_dates + 1,
+            total_weight,
+        )?;
+        *self = next;
+        *computed = true;
+        Ok(())
+    }
+
+    /// Require full date coverage and a nonzero denominator before enabling claims.
+    pub fn validate_complete(&self) -> Result<(), DomainError> {
+        if self.processed_dates != self.active_dates {
+            return Err(DomainError::IncompleteSettlement);
+        }
+        if self.total_weight == Weight::ZERO {
+            return Err(DomainError::ZeroDenominator);
+        }
+        Ok(())
+    }
+}
+
 /// Local arithmetic view of the frozen Pool basis and processing totals.
 ///
 /// The caller must authenticate frozen membership, each Position and its marker,
